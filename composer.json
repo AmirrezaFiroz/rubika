@@ -20,7 +20,7 @@
         "rubika-php",
         "rubika php"
     ],
-    "license": "MIT",
+    "license": "GPLv3",
     "minimum-stability": "stable",
     "authors": [
         {
