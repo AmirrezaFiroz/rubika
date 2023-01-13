@@ -20,7 +20,7 @@
         "rubika-php",
         "rubika php"
     ],
-    "license": "GPLv3",
+    "license": "GPL-3.0",
     "minimum-stability": "stable",
     "authors": [
         {
@@ -33,8 +33,8 @@
         }
     ],
     "require": {
-        "symfony/yaml": "^6.2",
-        "textalk/websocket": "^1.6",
+        "symfony/yaml": ">=6.2",
+        "textalk/websocket": ">=1.6",
         "php": ">=8"
     }
 }
