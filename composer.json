@@ -1,11 +1,11 @@
 {
-    "name": "rubika/rubika",
+    "name": "rubika",
     "description": "rubika client library for PHP",
     "type": "library",
     "version": "v0.5.2",
     "autoload": {
         "psr-4": {
-            "Rubika\\": "Rubika/"
+            "Rubika\\": "./"
         },
         "files": [
             "helper/CLI.php",
