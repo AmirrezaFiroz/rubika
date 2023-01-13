@@ -3,11 +3,19 @@
 use Rubika\Client;
 use Rubika\Exception\Error;
 
-function Bot(Closure $closure, int|string $phone)
+/**
+ * get updates fast
+ *
+ * @param Closure $closure function for passing updates and client object:
+ * function (array $update, client): void {}
+ * @param integer|string $phone
+ * @return void
+ */
+function Fast(Closure $closure, int|string $phone)
 {
     $GLOBALS["CLS"] = $closure;
     try {
-        class myBot extends Client
+        class fast extends Client
         {
             public function onStart(): void
             {
@@ -18,7 +26,7 @@ function Bot(Closure $closure, int|string $phone)
                 $GLOBALS["CLS"]($update, $this);
             }
         }
-        new myBot($phone);
+        new fast($phone);
     } catch (Error $e) {
         echo $e->getMessage() . "\n";
     }
