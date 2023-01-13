@@ -8,7 +8,7 @@
             "Rubika\\": "./"
         },
         "files": [
-            "helper/CLI.php",
+            "helper/Fast.php",
             "helper/Web.php"
         ]
     },

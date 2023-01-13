@@ -9,6 +9,6 @@ final class web_ConfigFileError extends Error
 {
     public function __construct(string $error)
     {
-        parent::__construct($error, 8);
+        parent::__construct($error, 10);
     }
 }
