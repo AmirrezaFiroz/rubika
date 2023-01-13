@@ -1,0 +1,40 @@
+{
+    "name": "rubika/rubika",
+    "description": "rubika client library for PHP",
+    "type": "library",
+    "version": "v0.5.2",
+    "autoload": {
+        "psr-4": {
+            "Rubika\\": "Rubika/"
+        },
+        "files": [
+            "helper/CLI.php",
+            "helper/Web.php"
+        ]
+    },
+    "readme": "README.md",
+    "keywords": [
+        "rubika",
+        "rubika",
+        "client",
+        "rubika-php",
+        "rubika php"
+    ],
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "authors": [
+        {
+            "name": "Amirreza",
+            "email": "amirreza.firoz13@gmail.com"
+        },
+        {
+            "name": "ALi",
+            "email": "alishahbazpor110@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/yaml": "^6.2",
+        "textalk/websocket": "^1.6",
+        "php": ">=8"
+    }
+}
