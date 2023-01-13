@@ -2,7 +2,7 @@
     "name": "rubika/rubika",
     "description": "rubika client library for PHP",
     "type": "library",
-    "version": "v0.5.3",
+    "version": "v1.0.0",
     "autoload": {
         "psr-4": {
             "Rubika\\": "./"
