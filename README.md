@@ -41,7 +41,7 @@ class myBot extends Client
         echo 'bot running ... ';
     }
 
-    function runBot(array $update): void # required !
+    function runBot(array $update) # required !
     {
         foreach ((isset($update['message']) ? $update['message'] : $update) as $message) {
             $message = isset($message['message']) ? $message['message'] : $message;
