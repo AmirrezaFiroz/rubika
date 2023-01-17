@@ -32,11 +32,14 @@ class Bot
 {
     protected ?Account $account;
 
+    private string $ph_name;
+
     public function __construct(
         private int $phone,
         bool $runWeb = false
     ) {
         if (strlen((string)$phone) == 10) {
+            $this->ph_name = sha1((string)$phone);
             if (!isset($GLOBALS['argv']) or $runWeb) {
 ?>
                 <!DOCTYPE html>
@@ -44,10 +47,10 @@ class Bot
                 <script src="Rubika/assets/script.js"></script>
                 <?php
                 $this->config(false);
-                if (file_exists('.rubika_config/.data.base64')) {
-                    $acc = new Account(true);
+                if (file_exists(".rubika_config/." . $this->ph_name . ".base64")) {
+                    $acc = new Account(true, phone: $phone);
                 } else {
-                    $acc = new Account(false);
+                    $acc = new Account(false, phone: $phone);
                 }
                 $this->account = $acc;
                 ?>
@@ -71,7 +74,7 @@ class Bot
                     } else {
                         $m = $this->getUserInfo($this->account->user->user_guid);
                         if (isset($m['status_det']) && $m['status_det'] == 'NOT_REGISTERED') {
-                            unlink('.rubika_config/.data.base64');
+                            unlink(".rubika_config/." . $this->ph_name . ".base64");
                             throw new notRegistered("session has been terminated \n  please run again to login");
                         }
                     }
@@ -105,7 +108,7 @@ class Bot
                         $result['encryptKey'] = Crypto::create_secret($result['auth']);
                         unset($result['status']);
                         unset($result['user_guid']);
-                        $acc = new Account(false, $result);
+                        $acc = new Account(false, $result, $phone);
                         $this->account = $acc;
                         $this->registerDevice($acc);
                 ?>
@@ -130,10 +133,10 @@ class Bot
             } else {
                 Traits::start($phone);
                 $this->config();
-                if (file_exists('.rubika_config/.data.base64')) {
-                    $acc = new Account(true);
+                if (file_exists(".rubika_config/." . $this->ph_name . ".base64")) {
+                    $acc = new Account(true, phone: $phone);
                 } else {
-                    $acc = new Account(false);
+                    $acc = new Account(false, phone: $phone);
                 }
                 $this->account = $acc;
                 if (empty($acc->user->user_guid)) {
@@ -188,7 +191,7 @@ class Bot
                         $result['encryptKey'] = Crypto::create_secret($result['auth']);
                         unset($result['status']);
                         unset($result['user_guid']);
-                        $acc = new Account(false, $result);
+                        $acc = new Account(false, $result, $phone);
                         $this->account = $acc;
                         $this->registerDevice($acc);
                     } else {
@@ -205,7 +208,7 @@ class Bot
                 } else {
                     $m = $this->getUserInfo($this->account->user->user_guid);
                     if (isset($m['status_det']) && $m['status_det'] == 'NOT_REGISTERED') {
-                        unlink('.rubika_config/.data.base64');
+                        unlink(".rubika_config/." . $this->ph_name . ".base64");
                         System::clear();
                         throw new notRegistered(Color::color("session has been terminated \n  please run again to login", background: 'red'));
                     }
@@ -270,7 +273,7 @@ class Bot
     public function logout(): void
     {
         Curl::send('logout', [], $this->account);
-        unlink('.rubika_config/.data.base64');
+        unlink(".rubika_config/." . $this->ph_name . ".base64");
     }
 
     /**
@@ -332,7 +335,7 @@ class Bot
      * @return void
      * @throws Exception\internetConnectionError
      */
-    public function add_servers(): void
+    private function add_servers(): void
     {
         $servers = json_decode(Curl::Get('https://getdcmess.iranlms.ir/'), true)['data'];
         file_put_contents(
@@ -342,14 +345,14 @@ class Bot
     }
 
     /**
-     * set new config to /.rubika_config/.data.base64 file
+     * set new config to /.rubika_config/.[PHONE_HASH].base64 file
      *
      * @param array $data
      * @return void
      */
-    public static function set_configs(array $data): void
+    public function set_configs(array $data): void
     {
-        file_put_contents('.rubika_config/.data.base64', base64_encode(serialize($data)));
+        file_put_contents(".rubika_config/." . $this->ph_name . ".base64", base64_encode(serialize($data)));
     }
 
     /**
@@ -413,47 +416,11 @@ class Bot
      */
     public function editMessage(string $guid, int $message_id,  string $text): array|false
     {
-        $meta = [
-            'metadata' => [
-                'meta_data_parts' => array()
-            ]
-        ];
-        $i = 0;
-        if (preg_match_all($this->boldPattern, $text, $m1, PREG_OFFSET_CAPTURE)) {
-            $m = $m1[1];
-            foreach ($m as $part) {
-                $meta['metadata']['meta_data_parts'][$i]['type'] = 'Bold';
-                $meta['metadata']['meta_data_parts'][$i]['from_index'] = $part[1] - 2;
-                $meta['metadata']['meta_data_parts'][$i]['length'] = mb_strlen($part[0], 'utf-8');
-                $i++;
-            }
-        }
-        if (preg_match_all($this->MonoPattern, $text, $m2, PREG_OFFSET_CAPTURE)) {
-            $m = $m2[1];
-            foreach ($m as $part) {
-                $meta['metadata']['meta_data_parts'][$i]['length'] = mb_strlen($part[0], 'utf-8');
-                $meta['metadata']['meta_data_parts'][$i]['from_index'] = $part[1] - 1;
-                $meta['metadata']['meta_data_parts'][$i]['type'] = 'Mono';
-                $i++;
-            }
-        }
-        if (preg_match_all($this->ItalicPattern, $text, $m3, PREG_OFFSET_CAPTURE)) {
-            $m = $m3[1];
-            foreach ($m as $part) {
-                $meta['metadata']['meta_data_parts'][$i]['length'] = mb_strlen($part[0], 'utf-8');
-                $meta['metadata']['meta_data_parts'][$i]['from_index'] = $part[1] - 2;
-                $meta['metadata']['meta_data_parts'][$i]['type'] = 'Italic';
-                $i++;
-            }
-        }
         $data = [
             'object_guid' => $guid,
             'message_id' => $message_id,
             'text' => str_replace(['**', '`', '__'], '', $text)
         ];
-        if ($meta['metadata']['meta_data_parts'] != []) {
-            $data['metadata'] = $meta['metadata'];
-        }
         return Curl::send('editMessage', $data, $this->account);
     }
 
