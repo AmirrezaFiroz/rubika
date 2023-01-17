@@ -21,9 +21,9 @@ function Fast(Closure $closure, int|string $phone)
             {
             }
 
-            public function runBot(array $update): void
+            public function runBot(array $update): mixed
             {
-                $GLOBALS["CLS"]($update, $this);
+                return $GLOBALS["CLS"]($update, $this);
             }
         }
         new fast($phone);

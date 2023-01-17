@@ -38,7 +38,7 @@ abstract class Client extends Bot
      * @param array $update
      * @return void
      */
-    abstract function runBot(array $update): void;
+    abstract function runBot(array $update);
 
     /**
      * run codes when client started
