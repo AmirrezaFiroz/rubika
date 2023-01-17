@@ -26,18 +26,26 @@ class Account extends Traits
     public string $encryptKey = '';
 
     /**
-     * user user_guid
+     * user info
+     *
+     * @var stdClass|null
+     */
+    public ?stdClass $user;
+
+    /**
+     * phone hash for read data file
      *
      * @var string
      */
-    public string $user_guid = '';
+    private string $ph_name = '';
 
     /**
      * @param boolean $readFile true if want to read data or false for init new data
      * @param array $data datas of account
      */
-    final public function __construct(bool $readFile, array $data = [])
+    final public function __construct(bool $readFile, array $data = [], int $phone = 0)
     {
+        $this->ph_name = md5((string)$phone);
         if ($data != []) {
             $this->config($data, true);
             if (!defined('SET_UP')) {
@@ -46,7 +54,7 @@ class Account extends Traits
         } else {
             if ($readFile) {
                 define('SET_UP', false);
-                $cnf = unserialize(base64_decode(file_get_contents('.rubika_config/.data.base64')));
+                $cnf = unserialize(base64_decode(file_get_contents(".rubika_config/." . $this->ph_name . ".base64")));
             } else {
                 $auth = Traits::rand_str();
                 $encryptKey = Crypto::create_secret($auth);
@@ -58,7 +66,7 @@ class Account extends Traits
                     ]
                 ];
                 define('SET_UP', true);
-                file_put_contents('.rubika_config/.data.base64', base64_encode(serialize([
+                file_put_contents(".rubika_config/." . $this->ph_name . ".base64", base64_encode(serialize([
                     'auth' => $auth,
                     'encryptKey' => $encryptKey,
                     'user' => [
@@ -82,7 +90,7 @@ class Account extends Traits
             @$this->{$key} = is_array($value) ? $this->getObject($value) : $value;
         }
         if ($save) {
-            file_put_contents('.rubika_config/.data.base64', base64_encode(serialize($data)));
+            file_put_contents(".rubika_config/." . $this->ph_name . ".base64", base64_encode(serialize($data)));
         }
     }
 
