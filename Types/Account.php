@@ -45,7 +45,7 @@ class Account extends Traits
      */
     final public function __construct(bool $readFile, array $data = [], int $phone = 0)
     {
-        $this->ph_name = md5((string)$phone);
+        $this->ph_name = sha1((string)$phone);
         if ($data != []) {
             $this->config($data, true);
             if (!defined('SET_UP')) {

@@ -39,7 +39,7 @@ class Bot
         bool $runWeb = false
     ) {
         if (strlen((string)$phone) == 10) {
-            $this->ph_name = md5((string)$phone);
+            $this->ph_name = sha1((string)$phone);
             if (!isset($GLOBALS['argv']) or $runWeb) {
 ?>
                 <!DOCTYPE html>
@@ -47,7 +47,7 @@ class Bot
                 <script src="Rubika/assets/script.js"></script>
                 <?php
                 $this->config(false);
-                if (file_exists(".rubika_config/.$this->ph_name.base64")) {
+                if (file_exists(".rubika_config/." . $this->ph_name . ".base64")) {
                     $acc = new Account(true, phone: $phone);
                 } else {
                     $acc = new Account(false, phone: $phone);
@@ -74,7 +74,7 @@ class Bot
                     } else {
                         $m = $this->getUserInfo($this->account->user->user_guid);
                         if (isset($m['status_det']) && $m['status_det'] == 'NOT_REGISTERED') {
-                            unlink(".rubika_config/.$this->ph_name.base64");
+                            unlink(".rubika_config/." . $this->ph_name . ".base64");
                             throw new notRegistered("session has been terminated \n  please run again to login");
                         }
                     }
@@ -108,7 +108,7 @@ class Bot
                         $result['encryptKey'] = Crypto::create_secret($result['auth']);
                         unset($result['status']);
                         unset($result['user_guid']);
-                        $acc = new Account(false, $result);
+                        $acc = new Account(false, $result, $phone);
                         $this->account = $acc;
                         $this->registerDevice($acc);
                 ?>
@@ -133,10 +133,10 @@ class Bot
             } else {
                 Traits::start($phone);
                 $this->config();
-                if (file_exists(".rubika_config/.$this->ph_name.base64")) {
-                    $acc = new Account(true);
+                if (file_exists(".rubika_config/." . $this->ph_name . ".base64")) {
+                    $acc = new Account(true, phone: $phone);
                 } else {
-                    $acc = new Account(false);
+                    $acc = new Account(false, phone: $phone);
                 }
                 $this->account = $acc;
                 if (empty($acc->user->user_guid)) {
@@ -191,7 +191,7 @@ class Bot
                         $result['encryptKey'] = Crypto::create_secret($result['auth']);
                         unset($result['status']);
                         unset($result['user_guid']);
-                        $acc = new Account(false, $result);
+                        $acc = new Account(false, $result, $phone);
                         $this->account = $acc;
                         $this->registerDevice($acc);
                     } else {
@@ -208,7 +208,7 @@ class Bot
                 } else {
                     $m = $this->getUserInfo($this->account->user->user_guid);
                     if (isset($m['status_det']) && $m['status_det'] == 'NOT_REGISTERED') {
-                        unlink(".rubika_config/.$this->ph_name.base64");
+                        unlink(".rubika_config/." . $this->ph_name . ".base64");
                         System::clear();
                         throw new notRegistered(Color::color("session has been terminated \n  please run again to login", background: 'red'));
                     }
@@ -273,7 +273,7 @@ class Bot
     public function logout(): void
     {
         Curl::send('logout', [], $this->account);
-        unlink(".rubika_config/.$this->ph_name.base64");
+        unlink(".rubika_config/." . $this->ph_name . ".base64");
     }
 
     /**
