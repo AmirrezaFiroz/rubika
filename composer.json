@@ -2,7 +2,7 @@
     "name": "rubika/rubika",
     "description": "rubika client library for PHP",
     "type": "library",
-    "version": "v1.0.1",
+    "version": "v1.1.0",
     "autoload": {
         "psr-4": {
             "Rubika\\": "./"
@@ -33,8 +33,8 @@
         }
     ],
     "require": {
-        "symfony/yaml": ">=6.2",
-        "textalk/websocket": ">=1.6",
+        "symfony/yaml": "^6.2",
+        "textalk/websocket": "^1.6",
         "php": ">=8"
     }
 }
