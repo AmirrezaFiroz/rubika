@@ -10,6 +10,9 @@
         "files": [
             "helper/Fast.php",
             "helper/Web.php"
+        ],
+        "exclude-from-classmap": [
+            "Docker/"
         ]
     },
     "readme": "README.md",
@@ -36,5 +39,6 @@
         "symfony/yaml": "^6.2",
         "textalk/websocket": "^1.6",
         "php": ">=8"
-    }
+    },
+    "homepage": "https://rubika-library.github.io"
 }

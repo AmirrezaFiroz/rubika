@@ -48,7 +48,8 @@ class Bot
                 <script src="Rubika/assets/script.js"></script>
                 <?php
                 $this->config(false);
-                if (file_exists(".rubika_config/." . $this->ph_name . ".base64")) {
+                $ex = file_exists(".rubika_config/." . $this->ph_name . ".base64");
+                if ($ex) {
                     $acc = new Account(true, phone: $phone);
                 } else {
                     $acc = new Account(false, phone: $phone);
@@ -56,70 +57,72 @@ class Bot
                 $this->account = $acc;
                 ?>
                 <?php
-                if ($_POST == []) {
-                    if (empty($acc->user->user_guid)) {
-                        $result = $this->sendSMS($phone, $acc);
-                        if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
-                            if ($result['has_confirmed_recovery_email']) {
-                                new login('two-step', $result['hint_pass_key']);
+                if (!$ex) {
+                    if ($_POST == []) {
+                        if (empty($acc->user->user_guid)) {
+                            $result = $this->sendSMS($phone, $acc);
+                            if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
+                                if ($result['has_confirmed_recovery_email']) {
+                                    new login('two-step', $result['hint_pass_key']);
+                                } else {
+                                    new login('', base64_encode(json_encode($result)));
+                                }
+                            } else {
+                                if (isset($result['client_show_message'])) {
+                                    throw new ERROR_GENERIC($result['client_show_message']);
+                                } else {
+                                    throw new ERROR_GENERIC("some things went wrong ... . (rubika : {$result['status_det']})");
+                                }
+                            }
+                        } else {
+                            $m = $this->getUserInfo($this->account->user->user_guid);
+                            if (isset($m['status_det']) && $m['status_det'] == 'NOT_REGISTERED') {
+                                unlink(".rubika_config/." . $this->ph_name . ".base64");
+                                throw new notRegistered("session has been terminated \n  please run again to login");
+                            }
+                        }
+                    } elseif (isset($_POST['password']) && $_POST['password'] != '') {
+                        if (!SET_UP && empty($acc->user->user_guid)) {
+                            $result = $this->sendSMS($phone, $acc, $_POST['password']);
+                            if ($result['status'] == 'InvalidPassKey') {
+                                throw new invalidPassword('two-step verifition password is not correct');
                             } else {
                                 new login('', base64_encode(json_encode($result)));
                             }
                         } else {
-                            if (isset($result['client_show_message'])) {
-                                throw new ERROR_GENERIC($result['client_show_message']);
-                            } else {
-                                throw new ERROR_GENERIC("some things went wrong ... . (rubika : {$result['status_det']})");
+                            throw new web_ConfigFileError('config file was deleted and re-setup');
+                        }
+                    } elseif (isset($_POST['code']) && $_POST['code'] != '') {
+                        if (!SET_UP && empty($acc->user->user_guid)) {
+                            $callback = json_decode(base64_decode($_POST['data']), true);
+                            $count = $callback['code_digits_count'];
+                            $hash = $callback['phone_code_hash'];
+                            $code = $_POST['code'];
+                            $code = strlen((string)((int)$code)) == $count ? $code : '';
+                            if (empty($code)) {
+                                throw new invalidCode('code is not valid');
                             }
-                        }
-                    } else {
-                        $m = $this->getUserInfo($this->account->user->user_guid);
-                        if (isset($m['status_det']) && $m['status_det'] == 'NOT_REGISTERED') {
-                            unlink(".rubika_config/." . $this->ph_name . ".base64");
-                            throw new notRegistered("session has been terminated \n  please run again to login");
-                        }
-                    }
-                } elseif (isset($_POST['password']) && $_POST['password'] != '') {
-                    if (!SET_UP && empty($acc->user->user_guid)) {
-                        $result = $this->sendSMS($phone, $acc, $_POST['password']);
-                        if ($result['status'] == 'InvalidPassKey') {
-                            throw new invalidPassword('two-step verifition password is not correct');
+                            $result = $this->signIn($phone, $acc, $hash, (int)$code);
+                            if ($result['status'] == 'CodeIsInvalid') {
+                                throw new CodeIsInvalid('login code is not true');
+                            } elseif ($result['status'] == 'CodeIsExpired') {
+                                throw new CodeIsExpired(' login code is expired');
+                            }
+                            $result['encryptKey'] = Crypto::create_secret($result['auth']);
+                            unset($result['status']);
+                            unset($result['user_guid']);
+                            $acc = new Account(false, $result, $phone);
+                            $this->account = $acc;
+                            $this->registerDevice($acc);
                         } else {
-                            new login('', base64_encode(json_encode($result)));
+                            throw new web_ConfigFileError('config file was deleted and re-setup');
                         }
                     } else {
-                        throw new web_ConfigFileError('config file was deleted and re-setup');
+                        var_dump($_POST);
                     }
-                } elseif (isset($_POST['code']) && $_POST['code'] != '') {
-                    if (!SET_UP && empty($acc->user->user_guid)) {
-                        $callback = json_decode(base64_decode($_POST['data']), true);
-                        $count = $callback['code_digits_count'];
-                        $hash = $callback['phone_code_hash'];
-                        $code = $_POST['code'];
-                        $code = strlen((string)((int)$code)) == $count ? $code : '';
-                        if (empty($code)) {
-                            throw new invalidCode('code is not valid');
-                        }
-                        $result = $this->signIn($phone, $acc, $hash, (int)$code);
-                        if ($result['status'] == 'CodeIsInvalid') {
-                            throw new CodeIsInvalid('login code is not true');
-                        } elseif ($result['status'] == 'CodeIsExpired') {
-                            throw new CodeIsExpired(' login code is expired');
-                        }
-                        $result['encryptKey'] = Crypto::create_secret($result['auth']);
-                        unset($result['status']);
-                        unset($result['user_guid']);
-                        $acc = new Account(false, $result, $phone);
-                        $this->account = $acc;
-                        $this->registerDevice($acc);
-                        if (file_exists($index)) {
-                            require_once file_get_contents($index);
-                        }
-                    } else {
-                        throw new web_ConfigFileError('config file was deleted and re-setup');
-                    }
-                } else {
-                    var_dump($_POST);
+                }
+                if (file_exists($index)) {
+                    require_once file_get_contents($index);
                 }
                 ?>
 
