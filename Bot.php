@@ -344,6 +344,40 @@ class Bot
     }
 
     /**
+     * pin message in chat
+     *
+     * @param string $guid chat guid
+     * @param integer $message_id
+     * @return array|false
+     */
+    public function pinMessage(string $guid, int $message_id): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'message_id' => $message_id,
+            'action' => 'Pin'
+        ];
+        return Curl::send('deleteMessages', $data, $this->account);
+    }
+
+    /**
+     * unpin message in chat
+     *
+     * @param string $guid chat guid
+     * @param integer $message_id
+     * @return array|false
+     */
+    public function unPinMessage(string $guid, int $message_id): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'message_id' => $message_id,
+            'action' => 'Pin'
+        ];
+        return Curl::send('deleteMessages', $data, $this->account);
+    }
+
+    /**
      * log out account session
      *
      * @return void
