@@ -12,6 +12,7 @@ use Rubika\Exception\{
     InvalidPhoneNumber,
     ERROR_GENERIC,
     invalidCode,
+    invalidOptions,
     invalidPassword,
     notRegistered,
     web_ConfigFileError
@@ -220,19 +221,85 @@ class Bot
      * @param string $guid user guid
      * @param string $text message
      * @param integer $reply_to_message_id reply to message id
+     * @param array $options options of message. (like telegram markup)
+     * examples:
+     * https://rubika-library.github.io/docs/options
      * @return array|false
      */
-    public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0): array|false
+    public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options): array|false
+    {
+        $no = '';
+        $index = mb_str_split($options['index']);
+        if (count($index) >= 1 && count($index) <= 3) {
+            foreach ($options as $nu => $opt) {
+                $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+            }
+            $data = [
+                'object_guid' => $guid,
+                'rnd' => (string)mt_rand(100000, 999999),
+                'text' => str_replace(['**', '`', '__'], '', $text) . "\n\n" . $no
+            ];
+            if ($reply_to_message_id != 0) {
+                $data['reply_to_message_id'] = $reply_to_message_id;
+            }
+            return Curl::send('sendMessage', $data, $this->account);
+        } else {
+            throw new invalidOptions("your options's arrange is invalid");
+        }
+    }
+
+    /**
+     * edit message in chat
+     *
+     * @param string $guid
+     * @param integer $message_id message id for edit
+     * @param string $text
+     * @param array $options options of message. (like telegram markup)
+     * examples:
+     * https://rubika-library.github.io/docs/options
+     * @return array|false
+     */
+    public function editMessage(string $guid, int $message_id,  string $text, array $options): array|false
+    {
+        $no = '';
+        $index = mb_str_split($options['index']);
+        if (count($index) >= 1 && count($index) <= 3) {
+            foreach ($options as $nu => $opt) {
+                $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+            }
+            $data = [
+                'object_guid' => $guid,
+                'message_id' => $message_id,
+                'text' => str_replace(['**', '`', '__'], '', $text)
+            ];
+            return Curl::send('editMessage', $data, $this->account);
+        } else {
+            throw new invalidOptions("your options's arrange is invalid");
+        }
+    }
+    /**
+     * forward message from chat to another chat
+     *
+     * @param string $from_guid from chat
+     * @param string $to_guid to chat
+     * @param array|integer $message_id array of ids or one just id
+     * @return array|false
+     */
+    public function forwardMessages(string $from_guid, string $to_guid, array|int $message_id): array|false
     {
         $data = [
-            'object_guid' => $guid,
+            'from_object_guid' => $from_guid,
             'rnd' => (string)mt_rand(100000, 999999),
-            'text' => str_replace(['**', '`', '__'], '', $text)
+            'to_object_guid' => $to_guid
         ];
-        if ($reply_to_message_id != 0) {
-            $data['reply_to_message_id'] = $reply_to_message_id;
+        if (is_numeric($message_id)) {
+            $data['message_ids'] = [
+                $message_id
+            ];
+        } elseif (is_array($message_id)) {
+            $data['message_ids'] = $message_id;
         }
-        return Curl::send('sendMessage', $data, $this->account);
+        return Curl::send('deleteMessages', $data, $this->account);
     }
 
     /**
@@ -398,49 +465,6 @@ class Bot
         return Curl::send('seenChats', [
             'seen_list' => $seen_list
         ], $this->account);
-    }
-
-    /**
-     * edit message in chat
-     *
-     * @param string $guid
-     * @param integer $message_id message id for edit
-     * @param string $text
-     * @return array|false
-     */
-    public function editMessage(string $guid, int $message_id,  string $text): array|false
-    {
-        $data = [
-            'object_guid' => $guid,
-            'message_id' => $message_id,
-            'text' => str_replace(['**', '`', '__'], '', $text)
-        ];
-        return Curl::send('editMessage', $data, $this->account);
-    }
-
-    /**
-     * forward message from chat to another chat
-     *
-     * @param string $from_guid from chat
-     * @param string $to_guid to chat
-     * @param array|integer $message_id array of ids or one just id
-     * @return array|false
-     */
-    public function forwardMessages(string $from_guid, string $to_guid, array|int $message_id): array|false
-    {
-        $data = [
-            'from_object_guid' => $from_guid,
-            'rnd' => (string)mt_rand(100000, 999999),
-            'to_object_guid' => $to_guid
-        ];
-        if (is_numeric($message_id)) {
-            $data['message_ids'] = [
-                $message_id
-            ];
-        } elseif (is_array($message_id)) {
-            $data['message_ids'] = $message_id;
-        }
-        return Curl::send('deleteMessages', $data, $this->account);
     }
 
     /**
