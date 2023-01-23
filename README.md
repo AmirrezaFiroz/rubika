@@ -117,7 +117,7 @@ $page = Web(9123456789);
 $page->sendMessage(...);
 ```
 
-**this feature will improve on text versions ...**
+**\* this feature will improve on text versions ...**
 
 # fast mode
 
@@ -136,4 +136,12 @@ Fast(function ($update, $obj) {
         $obj->sendMessage($user_id, 'پیامتان دریافت شد ;)');
     }
 }, 9123456789);
+```
+
+# Docker
+you can create a docker container and develop your bot in that
+
+```bash
+cd vendor/rubika/rubika/Docker
+docker-compose up
 ```
