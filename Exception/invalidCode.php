@@ -7,8 +7,8 @@ namespace Rubika\Exception;
  */
 final class invalidCode extends Error
 {
-    public function __construct(string $text)
+    public function __construct(string $error)
     {
-        parent::__construct($text, 5);
+        parent::__construct($error, 5);
     }
 }
