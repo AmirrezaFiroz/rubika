@@ -11,15 +11,6 @@ class Error extends \Exception
 
     public function __construct(string $error, int $errno)
     {
-        if (isset($GLOBALS['argv'])) {
-            parent::__construct($error, $errno);
-        } else {
-?>
-            <script>
-                showError('<?php echo $error; ?>');
-            </script>
-<?php
-        }
+        parent::__construct($error, $errno);
     }
 }
-?>

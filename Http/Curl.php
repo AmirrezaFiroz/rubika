@@ -7,7 +7,6 @@ namespace Rubika\Http;
 use Rubika\Tools\{
     Color,
     Crypto,
-    Printing,
     System
 };
 use Rubika\Exception\{
@@ -35,11 +34,7 @@ class Curl
         if (Status::connection()) {
             return file_get_contents($url);
         } else {
-            if (!isset($GLOBALS['argv'])) {
-                throw new internetConnectionError("no internet connetion");
-            } else {
-                throw new internetConnectionError(Color::color(str_repeat(' ', 25) . "\n  no internet connetion  \n" . str_repeat(' ', 25), 'black', 'red'));
-            }
+            throw new internetConnectionError();
         }
     }
 
@@ -72,11 +67,7 @@ class Curl
             curl_close($curl);
             return $result;
         } else {
-            if (!isset($GLOBALS['argv'])) {
-                throw new internetConnectionError("no internet connetion");
-            } else {
-                throw new internetConnectionError(Color::color(str_repeat(' ', 25) . "\n  no internet connetion  \n" . str_repeat(' ', 25), 'black', 'red'));
-            }
+            throw new internetConnectionError();
         }
     }
 
@@ -115,11 +106,7 @@ class Curl
             curl_close($c);
             return $httpCode == 200 ? true : false;
         } else {
-            if (!isset($GLOBALS['argv'])) {
-                throw new internetConnectionError("no internet connetion");
-            } else {
-                throw new internetConnectionError(Color::color(str_repeat(' ', 25) . "\n  no internet connetion  \n" . str_repeat(' ', 25), 'black', 'red'));
-            }
+            throw new internetConnectionError();
         }
     }
 
@@ -186,11 +173,7 @@ class Curl
             }
             return $sended;
         } else {
-            if (!isset($GLOBALS['argv'])) {
-                throw new internetConnectionError("no internet connetion");
-            } else {
-                throw new internetConnectionError(Color::color(str_repeat(' ', 25) . "\n  no internet connetion  \n" . str_repeat(' ', 25), 'black', 'red'));
-            }
+            throw new internetConnectionError();
         }
     }
 

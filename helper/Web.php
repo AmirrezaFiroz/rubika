@@ -9,10 +9,15 @@ use Rubika\Exception\Error;
  * @param integer $phone
  * @return Bot
  */
-function Web(int $phone): Bot
+function Web(int $phone)
 {
     try {
         return new Bot($phone, true);
     } catch (Error $e) {
+?>
+        <script>
+            showError('<?php echo $e; ?>');
+        </script>
+<?php
     }
 }
