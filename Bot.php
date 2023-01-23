@@ -35,12 +35,11 @@ class Bot
     private string $ph_name;
 
     public function __construct(
-        private int $phone,
-        bool $runWeb = false
+        private int $phone
     ) {
         if (strlen((string)$phone) == 10) {
             $this->ph_name = sha1((string)$phone);
-            if (!isset($GLOBALS['argv']) or $runWeb) {
+            if (!isset($GLOBALS['argv'])) {
 ?>
                 <!DOCTYPE html>
                 <html>

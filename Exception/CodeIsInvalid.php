@@ -5,7 +5,7 @@ namespace Rubika\Exception;
 /**
  * login code is invalid
  */
-class CodeIsInvalid extends Error
+final class CodeIsInvalid extends Error
 {
     public function __construct(string $error)
     {
