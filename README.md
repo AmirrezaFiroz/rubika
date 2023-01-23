@@ -108,7 +108,7 @@ if you runs your bot on web page or want to make web page, we have a way too ;)
 require_once __DIR__ . '/vendor/autoload.php';
 
 $page = Web(9123456789);
-// $page = Web(9123456789, 'index.php'); you can add a custom index file
+# $page = Web(9123456789, 'index.php'); you can add a custom index file
 // index file:
 //     <?php
 //     echo 'its OK ;)';
