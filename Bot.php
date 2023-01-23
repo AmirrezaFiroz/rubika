@@ -400,6 +400,29 @@ class Bot
     }
 
     /**
+     * add new contact
+     *
+     * @param string $fname first name
+     * @param string $lname last name
+     * @param integer $phone phone number. (like: 9123456789)
+     * @return array|false
+     */
+    public function addContact(string $fname, string $lname, int $phone): array|false
+    {
+        return Curl::send('addAddressBook', ["first_name" => $fname, "last_name" => $lname, "phone" => "98" . (string)$phone], $this->account);
+    }
+    /**
+     * delete contact
+     *
+     * @param string $guid
+     * @return array|false
+     */
+    public function deleteContact(string $guid): array|false
+    {
+        return Curl::send('deleteContact', ["user_guid" => $guid], $this->account);
+    }
+
+    /**
      * Undocumented function
      *
      * @param Account $acc account object
