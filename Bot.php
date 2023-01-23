@@ -73,7 +73,7 @@ class Bot
                             throw new ERROR_GENERIC("some things went wrong ... . (rubika : {$result['status_det']})");
                         }
                     }
-                } elseif ($_POST == []) {
+                } elseif ($ex && $_POST == []) {
                     if (empty($acc->user->user_guid)) {
                         $result = $this->sendSMS($phone, $acc);
                         if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
@@ -96,7 +96,7 @@ class Bot
                             throw new notRegistered("session has been terminated \n  please reload to try login");
                         }
                     }
-                } elseif (isset($_POST['password']) && $_POST['password'] != '') {
+                } elseif ($ex && isset($_POST['password']) && $_POST['password'] != '') {
                     if (!SET_UP && empty($acc->user->user_guid)) {
                         $result = $this->sendSMS($phone, $acc, $_POST['password']);
                         if ($result['status'] == 'InvalidPassKey') {
@@ -107,7 +107,7 @@ class Bot
                     } else {
                         throw new web_ConfigFileError('config file was deleted and re-setup');
                     }
-                } elseif (isset($_POST['code']) && $_POST['code'] != '') {
+                } elseif ($ex && isset($_POST['code']) && $_POST['code'] != '') {
                     if (!SET_UP && empty($acc->user->user_guid)) {
                         $callback = json_decode(base64_decode($_POST['data']), true);
                         $count = $callback['code_digits_count'];
