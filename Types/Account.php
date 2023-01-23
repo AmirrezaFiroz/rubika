@@ -56,6 +56,7 @@ class Account extends Traits
                 define('SET_UP', false);
                 $cnf = unserialize(base64_decode(file_get_contents(".rubika_config/." . $this->ph_name . ".base64")));
             } else {
+                define('SET_UP', true);
                 $auth = Traits::rand_str();
                 $encryptKey = Crypto::create_secret($auth);
                 $cnf = [
@@ -65,7 +66,6 @@ class Account extends Traits
                         'user_guid' => ''
                     ]
                 ];
-                define('SET_UP', true);
                 file_put_contents(".rubika_config/." . $this->ph_name . ".base64", base64_encode(serialize([
                     'auth' => $auth,
                     'encryptKey' => $encryptKey,

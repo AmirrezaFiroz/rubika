@@ -72,6 +72,7 @@ try {
     echo $e->getMessage();
 }
 
+
 // or for updates :
 
 
@@ -95,6 +96,7 @@ try {
 |   8   |             account session terminated error             |
 |   9   |                  login code is invalid                   |
 |  10   | account session terminated error **(in web login mode)** |
+|  11   |                 invalid message options                  |
 
 # web mode
 
@@ -106,10 +108,16 @@ if you runs your bot on web page or want to make web page, we have a way too ;)
 require_once __DIR__ . '/vendor/autoload.php';
 
 $page = Web(9123456789);
+// $page = Web(9123456789, 'index.php'); you can add a custom index file
+// index file:
+//     <?php
+//     echo 'its OK ;)';
+//     ?>
+
 $page->sendMessage(...);
 ```
 
-**this feature will improve on text versions ...**
+**\* this feature will improve on text versions ...**
 
 # fast mode
 
@@ -128,4 +136,12 @@ Fast(function ($update, $obj) {
         $obj->sendMessage($user_id, 'پیامتان دریافت شد ;)');
     }
 }, 9123456789);
+```
+
+# Docker
+you can create a docker container and develop your bot in that
+
+```bash
+cd vendor/rubika/rubika/Docker
+docker-compose up
 ```

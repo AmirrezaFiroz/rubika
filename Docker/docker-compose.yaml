@@ -6,7 +6,7 @@ services:
     build:
       dockerfile: Dockerfile
     volumes:
-      - '.:/root/'
+      - '..:/root/'
     networks:
       - app
     ports:
@@ -15,7 +15,7 @@ services:
     container_name: php
     image: php:fpm-alpine
     volumes:
-      - '.:/root/'
+      - '..:/root/'
     networks:
       - app
 
