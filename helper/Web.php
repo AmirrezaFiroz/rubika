@@ -1,6 +1,7 @@
 <?php
 
 use Rubika\Bot;
+use Rubika\Exception\Error;
 
 /**
  * run web mode
@@ -10,5 +11,13 @@ use Rubika\Bot;
  */
 function Web(int $phone)
 {
-    $b = new Bot($phone, true);
+    try {
+        return new Bot($phone, true);
+    } catch (Error $e) {
+?>
+        <script>
+            showError('<?php echo $e; ?>');
+        </script>
+<?php
+    }
 }

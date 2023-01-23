@@ -35,7 +35,8 @@ class Bot
     private string $ph_name;
 
     public function __construct(
-        private int $phone
+        private int $phone,
+        $index
     ) {
         if (strlen((string)$phone) == 10) {
             $this->ph_name = sha1((string)$phone);
@@ -110,15 +111,9 @@ class Bot
                         $acc = new Account(false, $result, $phone);
                         $this->account = $acc;
                         $this->registerDevice($acc);
-                ?>
-                        <center>
-                            <h1>
-                                <strong>
-                                    OK
-                                </strong>
-                            </h1>
-                        </center>
-                <?php
+                        if (file_exists($index)) {
+                            require_once file_get_contents($index);
+                        }
                     } else {
                         throw new web_ConfigFileError('config file was deleted and re-setup');
                     }
