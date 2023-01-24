@@ -378,17 +378,6 @@ class Bot
     }
 
     /**
-     * log out account session
-     *
-     * @return void
-     */
-    public function logout(): void
-    {
-        Curl::send('logout', [], $this->account);
-        unlink(".rubika_config/." . $this->ph_name . ".base64");
-    }
-
-    /**
      * get user infomation
      *
      * @param string $user_user_guid user guid

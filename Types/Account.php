@@ -4,6 +4,7 @@ namespace Rubika\Types;
 
 use Rubika\Tools\Crypto;
 use Rubika\Extension\Traits;
+use Rubika\Http\Curl;
 use stdClass;
 
 /**
@@ -117,5 +118,33 @@ class Account extends Traits
     public function to_array(): array
     {
         return (array)$this;
+    }
+
+    /**
+     * log out account session
+     *
+     * @return void
+     */
+    public function logout(): void
+    {
+        Curl::send('logout', [], $this);
+        unlink(".rubika_config/." . $this->ph_name . ".base64");
+    }
+
+    /**
+     * change account two-step password
+     *
+     * @param string $oldPass account password
+     * @param string $newPass new password for account
+     * @param string $hint hint of password
+     * @return array|false array if is it successful or false if its failed
+     */
+    public function changePassword(string $oldPass, string $newPass, string $hint): array|false
+    {
+        return Curl::send('getUserInfo', [
+            "password" => $oldPass,
+            "new_hint" => $hint,
+            "new_password" => $newPass
+        ], $this);
     }
 }
