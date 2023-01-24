@@ -1,8 +1,8 @@
 {
-    "name": "rubika/rubika",
+    "name": "rubika/app",
     "description": "rubikaa app library for PHP",
     "type": "library",
-    "version": "v1.2.0",
+    "version": "v1.1.0",
     "autoload": {
         "psr-4": {
             "Rubika\\": "./"
@@ -28,7 +28,8 @@
     "authors": [
         {
             "name": "Amirreza",
-            "email": "amirreza.firoz13@gmail.com"
+            "email": "amirreza.firoz13@gmail.com",
+            "homepage": "https://AmirrezaFiroz.github.io"
         },
         {
             "name": "ALi",

@@ -2,6 +2,9 @@
 
 namespace Rubika\Exception;
 
+use fast;
+use Rubika\Tools\Color;
+
 /**
  * class for specify client errors from code errors
  */
@@ -11,6 +14,12 @@ class Error extends \Exception
 
     public function __construct(string $error, int $errno)
     {
-        parent::__construct($error, $errno);
+        $first = true;
+        foreach (explode("\n", $error) as $line) {
+            $error = $first ? '' : $error;
+            $error .= ($first ? '' : "\n") . (isset($GLOBALS['argv']) ? Color::color(" >_ ", background: 'red') : "  ") . ' ' . $line;
+            $first = false;
+        }
+        parent::__construct((isset($GLOBALS['argv']) ? Color::color(" Error: ", background: 'red') : "Error:") . "\n$error", $errno);
     }
 }

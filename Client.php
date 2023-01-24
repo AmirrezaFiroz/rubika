@@ -3,7 +3,7 @@
 namespace Rubika;
 
 use Rubika\Exception\internetConnectionError;
-use Rubika\Http\Curl;
+use Rubika\Http\Kernel;
 use Rubika\Tools\Color;
 use Rubika\Tools\Crypto;
 use WebSocket\Client as websocket;
@@ -23,7 +23,7 @@ abstract class Client extends Bot
     public function __construct(int $phone, bool $runWeb = false)
     {
         parent::__construct($phone, $runWeb);
-        $url = Curl::get_socket_links();
+        $url = Kernel::get_socket_links();
         if (count($url) == 0) {
             throw new internetConnectionError(Color::color(' error in testing socket links ', background: 'red'));
         }
