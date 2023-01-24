@@ -409,8 +409,13 @@ class Bot
      */
     public function addContact(string $fname, string $lname, int $phone): array|false
     {
-        return Curl::send('addAddressBook', ["first_name" => $fname, "last_name" => $lname, "phone" => "98" . (string)$phone], $this->account);
+        return Curl::send('addAddressBook', [
+            "first_name" => $fname,
+            "last_name" => $lname,
+            "phone" => "98" . (string)$phone
+        ], $this->account);
     }
+
     /**
      * delete contact
      *
@@ -420,6 +425,34 @@ class Bot
     public function deleteContact(string $guid): array|false
     {
         return Curl::send('deleteContact', ["user_guid" => $guid], $this->account);
+    }
+
+    /**
+     * block the user
+     *
+     * @param string $guid
+     * @return void
+     */
+    public function block(string $guid)
+    {
+        return Curl::send('setBlockUser', [
+            "user_guid" => $guid,
+            "action" => "Block"
+        ], $this->account);
+    }
+
+    /**
+     * unblock blocked user
+     *
+     * @param string $guid
+     * @return void
+     */
+    public function unBlock(string $guid)
+    {
+        return Curl::send('setBlockUser', [
+            "user_guid" => $guid,
+            "action" => "Unblock"
+        ], $this->account);
     }
 
     /**
