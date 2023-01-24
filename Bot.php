@@ -19,7 +19,7 @@ use Rubika\Exception\{
     web_ConfigFileError
 };
 use Rubika\Extension\Traits;
-use Rubika\Http\Curl;
+use Rubika\Http\Kernel;
 use Rubika\Tools\{
     Color,
     Crypto,
@@ -32,13 +32,13 @@ use Symfony\Component\Yaml\Yaml;
 
 class Bot
 {
-    protected ?Account $account;
+    public ?Account $account;
 
     private string $ph_name;
 
     public function __construct(
         private int $phone,
-        $index
+        $index = ''
     ) {
         if (strlen((string)$phone) == 10) {
             $this->ph_name = sha1((string)$phone);
@@ -251,7 +251,7 @@ class Bot
      */
     public function seenChats(array $seen_list): array|false
     {
-        return Curl::send('seenChats', [
+        return Kernel::send('seenChats', [
             'seen_list' => $seen_list
         ], $this->account);
     }
@@ -267,7 +267,7 @@ class Bot
      * https://rubika-library.github.io/docs/options
      * @return array|false
      */
-    public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options): array|false
+    public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options = []): array|false
     {
         $no = '';
         $index = mb_str_split($options['index']);
@@ -283,7 +283,7 @@ class Bot
             if ($reply_to_message_id != 0) {
                 $data['reply_to_message_id'] = $reply_to_message_id;
             }
-            return Curl::send('sendMessage', $data, $this->account);
+            return Kernel::send('sendMessage', $data, $this->account);
         } else {
             throw new invalidOptions("your options's arrange is invalid");
         }
@@ -313,7 +313,7 @@ class Bot
                 'message_id' => $message_id,
                 'text' => str_replace(['**', '`', '__'], '', $text)
             ];
-            return Curl::send('editMessage', $data, $this->account);
+            return Kernel::send('editMessage', $data, $this->account);
         } else {
             throw new invalidOptions("your options's arrange is invalid");
         }
@@ -340,7 +340,7 @@ class Bot
         } elseif (is_array($message_id)) {
             $data['message_ids'] = $message_id;
         }
-        return Curl::send('deleteMessages', $data, $this->account);
+        return Kernel::send('deleteMessages', $data, $this->account);
     }
 
     /**
@@ -364,7 +364,7 @@ class Bot
         } elseif (is_array($message_id)) {
             $data['message_ids'] = $message_id;
         }
-        return Curl::send('deleteMessages', $data, $this->account);
+        return Kernel::send('deleteMessages', $data, $this->account);
     }
 
     /**
@@ -381,7 +381,7 @@ class Bot
             'message_id' => $message_id,
             'action' => 'Pin'
         ];
-        return Curl::send('deleteMessages', $data, $this->account);
+        return Kernel::send('deleteMessages', $data, $this->account);
     }
 
     /**
@@ -398,7 +398,7 @@ class Bot
             'message_id' => $message_id,
             'action' => 'Pin'
         ];
-        return Curl::send('deleteMessages', $data, $this->account);
+        return Kernel::send('deleteMessages', $data, $this->account);
     }
 
     /**
@@ -409,7 +409,7 @@ class Bot
      */
     public function getUserInfo(string $user_user_guid): array|false
     {
-        return Curl::send('getUserInfo', ["user_user_guid" => $user_user_guid], $this->account);
+        return Kernel::send('getUserInfo', ["user_user_guid" => $user_user_guid], $this->account);
     }
 
     /**
@@ -422,7 +422,7 @@ class Bot
      */
     public function addContact(string $fname, string $lname, int $phone): array|false
     {
-        return Curl::send('addAddressBook', [
+        return Kernel::send('addAddressBook', [
             "first_name" => $fname,
             "last_name" => $lname,
             "phone" => "98" . (string)$phone
@@ -437,7 +437,7 @@ class Bot
      */
     public function deleteContact(string $guid): array|false
     {
-        return Curl::send('deleteContact', ["user_guid" => $guid], $this->account);
+        return Kernel::send('deleteContact', ["user_guid" => $guid], $this->account);
     }
 
     /**
@@ -448,7 +448,7 @@ class Bot
      */
     public function block(string $guid)
     {
-        return Curl::send('setBlockUser', [
+        return Kernel::send('setBlockUser', [
             "user_guid" => $guid,
             "action" => "Block"
         ], $this->account);
@@ -462,7 +462,7 @@ class Bot
      */
     public function unBlock(string $guid)
     {
-        return Curl::send('setBlockUser', [
+        return Kernel::send('setBlockUser', [
             "user_guid" => $guid,
             "action" => "Unblock"
         ], $this->account);
@@ -476,7 +476,7 @@ class Bot
      */
     private function registerDevice(Account $acc): array|false
     {
-        return Curl::send(
+        return Kernel::send(
             'registerDevice',
             [
                 "token_type" => "Web",
@@ -518,7 +518,7 @@ class Bot
      */
     private function add_servers(): void
     {
-        $servers = json_decode(Curl::Get('https://getdcmess.iranlms.ir/'), true)['data'];
+        $servers = json_decode(Kernel::Get('https://getdcmess.iranlms.ir/'), true)['data'];
         file_put_contents(
             '.rubika_config/.servers.yaml',
             Yaml::dump($servers)
@@ -553,7 +553,7 @@ class Bot
         if (!empty($password)) {
             $i['pass_key'] = $password;
         }
-        return Curl::send('sendCode', $i, $acc, true);
+        return Kernel::send('sendCode', $i, $acc, true);
     }
 
     /**
@@ -567,7 +567,7 @@ class Bot
      */
     private function signIn(int $phone, Account $acc, string $hash, int $code): array|false
     {
-        return Curl::send('signIn', [
+        return Kernel::send('signIn', [
             "phone_number" => '98' . (string)$phone,
             "phone_code_hash" => $hash,
             "phone_code" => $code

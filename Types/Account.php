@@ -2,9 +2,11 @@
 
 namespace Rubika\Types;
 
+use Rubika\Exception\ERROR_GENERIC;
+use Rubika\Exception\UsernameExist;
 use Rubika\Tools\Crypto;
 use Rubika\Extension\Traits;
-use Rubika\Http\Curl;
+use Rubika\Http\Kernel;
 use stdClass;
 
 /**
@@ -127,7 +129,7 @@ class Account extends Traits
      */
     public function logout(): void
     {
-        Curl::send('logout', [], $this);
+        Kernel::send('logout', [], $this);
         unlink(".rubika_config/." . $this->ph_name . ".base64");
     }
 
@@ -141,7 +143,7 @@ class Account extends Traits
      */
     public function changePassword(string $oldPass, string $newPass, string $hint): array|false
     {
-        return Curl::send('getUserInfo', [
+        return Kernel::send('getUserInfo', [
             "password" => $oldPass,
             "new_hint" => $hint,
             "new_password" => $newPass
@@ -156,9 +158,18 @@ class Account extends Traits
      */
     public function changeUsername(string $newUsername): array|false
     {
-        // $this->user->username = $newUsername;
-        return Curl::send('updateUsername', [
+        $res = Kernel::send('updateUsername', [
             "username" => $newUsername
         ], $this);
+        $this->user->username = $res['status'] == 'OK' ? $newUsername : $this->user->username;
+        switch ($res['status']) {
+            case 'UsernameExist':
+                throw new UsernameExist('username is already exist');
+                break;
+            case 'ERROR_GENERIC':
+                throw new ERROR_GENERIC("invalid username input:\n  1. must start with characters\n  2. characters count must between 5-32\n  3. allowed chars: english characters(a-z , A-Z) and (_)");
+                break;
+        }
+        return $res;
     }
 }

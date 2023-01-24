@@ -21,7 +21,7 @@ use WebSocket\ConnectionException;
 /**
  * HTTP library
  */
-class Curl
+class Kernel
 {
     /**
      * send GET request
