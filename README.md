@@ -84,19 +84,21 @@ try {
 
 ```
 
-| code  |                       describtion                        |
-| :---: | :------------------------------------------------------: |
-|   1   |                   invalid phone input                    |
-|   2   |              possible API errors (response)              |
-|   3   |              not have an intenet connetion               |
-|   4   |                    API general error                     |
-|   5   |               invalid login code **input**               |
-|   6   |           invalid twostep verifition password            |
-|   7   |                login code time is expired                |
-|   8   |             account session terminated error             |
-|   9   |                  login code is invalid                   |
-|  10   | account session terminated error **(in web login mode)** |
-|  11   |                 invalid message options                  |
+| code  |                                      describtion                                      |
+| :---: | :-----------------------------------------------------------------------------------: |
+|   1   |                                  invalid phone input                                  |
+|   2   |                            possible API errors (response)                             |
+|   3   |                             not have an intenet connetion                             |
+|   4   |                                   API general error                                   |
+|   5   |                             invalid login code **input**                              |
+|   6   |                          invalid twostep verifition password                          |
+|   7   |                              login code time is expired                               |
+|   8   |                           account session terminated error                            |
+|   9   |                                 login code is invalid                                 |
+|  10   |               account session terminated error **(in web login mode)**                |
+|  11   |                                invalid message options                                |
+|  12   |                           library cant find web index file                            |
+|  13   | account new username is already exists on server and you can't set it as new username |
 
 # web mode
 
@@ -117,7 +119,7 @@ $page = Web(9123456789);
 $page->sendMessage(...);
 ```
 
-**\* this feature will improve on text versions ...**
+**\* web login feature will improve on the text versions ...**
 
 # fast mode
 
