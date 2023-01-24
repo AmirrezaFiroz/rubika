@@ -233,6 +233,30 @@ class Bot
     }
 
     /**
+     * get account info
+     *
+     * @param boolean $array true for return array
+     * @return Account|array
+     */
+    public function getMe(bool $array = false): Account|array
+    {
+        return $array ? $this->account->to_array() : $this->account;
+    }
+
+    /** 
+     * seen messages
+     * 
+     * @param array $seen_list list of message seened ['object_guid' => 'LAST MESSAGE ID FOR SEEN']
+     * @return array|false
+     */
+    public function seenChats(array $seen_list): array|false
+    {
+        return Curl::send('seenChats', [
+            'seen_list' => $seen_list
+        ], $this->account);
+    }
+
+    /**
      * send message to user
      *
      * @param string $guid user guid
@@ -472,7 +496,7 @@ class Bot
      *
      * @return void
      */
-    public function config(bool $log = true): void
+    private function config(bool $log = true): void
     {
         if (!is_dir('.rubika_config') or !file_exists('.rubika_config/.servers.yaml')) {
             try {
@@ -507,7 +531,7 @@ class Bot
      * @param array $data
      * @return void
      */
-    public function set_configs(array $data): void
+    private function set_configs(array $data): void
     {
         file_put_contents(".rubika_config/." . $this->ph_name . ".base64", base64_encode(serialize($data)));
     }
@@ -520,7 +544,7 @@ class Bot
      * @param string $password two-step verifition password
      * @return array|false array if is it successful or false if its failed
      */
-    public function sendSMS(int $phone, Account $acc, string $password = ''): array|false
+    private function sendSMS(int $phone, Account $acc, string $password = ''): array|false
     {
         $i = [
             'phone_number' => '98' . (string)$phone,
@@ -541,36 +565,12 @@ class Bot
      * @param integer $code phone_code
      * @return array|false array if is it successful or false if its failed
      */
-    public function signIn(int $phone, Account $acc, string $hash, int $code): array|false
+    private function signIn(int $phone, Account $acc, string $hash, int $code): array|false
     {
         return Curl::send('signIn', [
             "phone_number" => '98' . (string)$phone,
             "phone_code_hash" => $hash,
             "phone_code" => $code
         ], $acc, true);
-    }
-
-    /** 
-     * seen messages
-     * 
-     * @param array $seen_list list of message seened ['object_guid' => 'LAST MESSAGE ID FOR SEEN']
-     * @return array|false
-     */
-    public function seenChats(array $seen_list): array|false
-    {
-        return Curl::send('seenChats', [
-            'seen_list' => $seen_list
-        ], $this->account);
-    }
-
-    /**
-     * get account info
-     *
-     * @param boolean $array true for return array
-     * @return Account|array
-     */
-    public function getMe(bool $array = false): Account|array
-    {
-        return $array ? $this->account->to_array() : $this->account;
     }
 }

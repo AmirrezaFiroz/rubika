@@ -147,4 +147,18 @@ class Account extends Traits
             "new_password" => $newPass
         ], $this);
     }
+
+    /**
+     * change account username
+     *
+     * @param string $newUsername
+     * @return array|false
+     */
+    public function changeUsername(string $newUsername): array|false
+    {
+        // $this->user->username = $newUsername;
+        return Curl::send('updateUsername', [
+            "username" => $newUsername
+        ], $this);
+    }
 }
