@@ -172,4 +172,14 @@ class Account extends Traits
         }
         return $res;
     }
+
+    /**
+     * get account sessions
+     *
+     * @return array|false
+     */
+    public function getMySessions(): array|false
+    {
+        return Kernel::send('getMySessions', array(), $this);
+    }
 }

@@ -441,6 +441,16 @@ class Bot
     }
 
     /**
+     * get contact list
+     *
+     * @return array|false
+     */
+    public function getContacts(): array|false
+    {
+        return Kernel::send('getContacts', array(), $this->account);
+    }
+
+    /**
      * block the user
      *
      * @param string $guid
@@ -465,6 +475,46 @@ class Bot
         return Kernel::send('setBlockUser', [
             "user_guid" => $guid,
             "action" => "Unblock"
+        ], $this->account);
+    }
+
+    /**
+     * get chat list
+     *
+     * @return array|false
+     */
+    public function getChats(): array|false
+    {
+        return Kernel::send('setBlockUser', [
+            "start_id" => null
+        ], $this->account);
+    }
+
+    /**
+     * mute chat notifocations
+     *
+     * @param string $guid chat id
+     * @return array|false
+     */
+    public function muteChat(string $guid): array|false
+    {
+        return Kernel::send('setActionChat', [
+            "action" => "Mute",
+            "object_guid" => $guid
+        ], $this->account);
+    }
+
+    /**
+     * unmute muted chat notifocations
+     *
+     * @param string $guid chat id
+     * @return array|false
+     */
+    public function unUuteChat(string $guid): array|false
+    {
+        return Kernel::send('setActionChat', [
+            "action" => "Unmute",
+            "object_guid" => $guid
         ], $this->account);
     }
 
