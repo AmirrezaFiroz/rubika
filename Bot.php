@@ -270,23 +270,25 @@ class Bot
     public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options = []): array|false
     {
         $no = '';
-        $index = mb_str_split($options['index']);
-        if (count($index) >= 1 && count($index) <= 3) {
-            foreach ($options as $nu => $opt) {
-                $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+        if ($options != []) {
+            $index = mb_str_split($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
             }
-            $data = [
-                'object_guid' => $guid,
-                'rnd' => (string)mt_rand(100000, 999999),
-                'text' => str_replace(['**', '`', '__'], '', $text) . "\n\n" . $no
-            ];
-            if ($reply_to_message_id != 0) {
-                $data['reply_to_message_id'] = $reply_to_message_id;
-            }
-            return Kernel::send('sendMessage', $data, $this->account);
-        } else {
-            throw new invalidOptions("your options's arrange is invalid");
         }
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'text' => str_replace(['**', '`', '__'], '', $text) . "\n\n" . $no
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        return Kernel::send('sendMessage', $data, $this->account);
     }
 
     /**
@@ -304,19 +306,22 @@ class Bot
     {
         $no = '';
         $index = mb_str_split($options['index']);
-        if (count($index) >= 1 && count($index) <= 3) {
-            foreach ($options as $nu => $opt) {
-                $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+        if ($options != []) {
+            $index = mb_str_split($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
             }
-            $data = [
-                'object_guid' => $guid,
-                'message_id' => $message_id,
-                'text' => str_replace(['**', '`', '__'], '', $text)
-            ];
-            return Kernel::send('editMessage', $data, $this->account);
-        } else {
-            throw new invalidOptions("your options's arrange is invalid");
         }
+        $data = [
+            'object_guid' => $guid,
+            'message_id' => $message_id,
+            'text' => str_replace(['**', '`', '__'], '', $text)
+        ];
+        return Kernel::send('editMessage', $data, $this->account);
     }
     /**
      * forward message from chat to another chat
