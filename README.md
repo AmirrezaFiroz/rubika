@@ -54,6 +54,7 @@ class myBot extends Client
         }
     }
 }
+
 new myBot(9123456789);
 ```
 
@@ -84,6 +85,7 @@ try {
 
 ```
 
+
 | code  |                                      describtion                                      |
 | :---: | :-----------------------------------------------------------------------------------: |
 |   1   |                                  invalid phone input                                  |
@@ -104,19 +106,19 @@ try {
 
 if you runs your bot on web page or want to make web page, we have a way too ;)
 
-**Note :** with runnig on web page, client actives web mode automatic
+**Note :** with runnig on web page, Bot will active web mode automatic
 
 ```php
 require_once __DIR__ . '/vendor/autoload.php';
 
 $page = Web(9123456789);
-# $page = Web(9123456789, 'index.php'); you can add a custom index file
+// $page = Web(9123456789, 'index.php'); you can add a custom index file
 // index file:
 //     <?php
 //     echo 'its OK ;)';
 //     ?>
 
-$page->sendMessage(...);
+$page->sendMessage("uFF...", 'سلام');
 ```
 
 **\* web login feature will improve on the text versions ...**
