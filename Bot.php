@@ -272,9 +272,10 @@ class Bot
         $no = "\n\n";
         if ($options != []) {
             $index = mb_str_split($options['index']);
+            unset($options['index']);
             if (count($index) >= 1 && count($index) <= 3) {
                 foreach ($options as $nu => $opt) {
-                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
                 }
             } else {
                 throw new invalidOptions("your options's arrange is invalid");
@@ -283,7 +284,7 @@ class Bot
         $data = [
             'object_guid' => $guid,
             'rnd' => (string)mt_rand(100000, 999999),
-            'text' => str_replace(['**', '`', '__'], '', $text) . $no
+            'text' => $text . $no
         ];
         if ($reply_to_message_id != 0) {
             $data['reply_to_message_id'] = $reply_to_message_id;
@@ -306,11 +307,12 @@ class Bot
     {
         $no = "\n\n";
         $index = mb_str_split($options['index']);
+        unset($options['index']);
         if ($options != []) {
             $index = mb_str_split($options['index']);
             if (count($index) >= 1 && count($index) <= 3) {
                 foreach ($options as $nu => $opt) {
-                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
                 }
             } else {
                 throw new invalidOptions("your options's arrange is invalid");
