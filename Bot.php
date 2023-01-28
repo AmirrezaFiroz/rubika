@@ -269,12 +269,13 @@ class Bot
      */
     public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options = []): array|false
     {
-        $no = '';
+        $no = "\n\n";
         if ($options != []) {
             $index = mb_str_split($options['index']);
+            unset($options['index']);
             if (count($index) >= 1 && count($index) <= 3) {
                 foreach ($options as $nu => $opt) {
-                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
                 }
             } else {
                 throw new invalidOptions("your options's arrange is invalid");
@@ -283,7 +284,7 @@ class Bot
         $data = [
             'object_guid' => $guid,
             'rnd' => (string)mt_rand(100000, 999999),
-            'text' => str_replace(['**', '`', '__'], '', $text) . "\n\n" . $no
+            'text' => $text . $no
         ];
         if ($reply_to_message_id != 0) {
             $data['reply_to_message_id'] = $reply_to_message_id;
@@ -304,13 +305,14 @@ class Bot
      */
     public function editMessage(string $guid, int $message_id,  string $text, array $options): array|false
     {
-        $no = '';
+        $no = "\n\n";
         $index = mb_str_split($options['index']);
+        unset($options['index']);
         if ($options != []) {
             $index = mb_str_split($options['index']);
             if (count($index) >= 1 && count($index) <= 3) {
                 foreach ($options as $nu => $opt) {
-                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]}";
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
                 }
             } else {
                 throw new invalidOptions("your options's arrange is invalid");
@@ -319,7 +321,7 @@ class Bot
         $data = [
             'object_guid' => $guid,
             'message_id' => $message_id,
-            'text' => str_replace(['**', '`', '__'], '', $text)
+            'text' => $text . $no
         ];
         return Kernel::send('editMessage', $data, $this->account);
     }
