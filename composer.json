@@ -1,6 +1,6 @@
 {
     "name": "rubika/app",
-    "description": "rubikaa app library for PHP",
+    "description": "rubika library for making apps with PHP",
     "type": "library",
     "version": "v1.2.0",
     "autoload": {
