@@ -1,5 +1,5 @@
 {
-    "name": "rubika/main",
+    "name": "rubika/app",
     "description": "rubika library for making apps with PHP",
     "type": "library",
     "version": "v1.2.0",
