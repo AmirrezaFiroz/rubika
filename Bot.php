@@ -410,7 +410,7 @@ class Bot
 
     public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
     {
-        $response = $this->requestSendFile(basename($filePath), filesize($filePath));
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, filesize($filePath));
         if ($response['status' != 'OK']) {
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         } else {
@@ -648,6 +648,7 @@ class Bot
             "phone_code" => $code
         ], $this->account, true);
     }
+
     // if (function_exists('curl_file_create')) { // php 5.5+
     //     $cFile = curl_file_create($file_name_with_full_path);
     //   } else { // 
