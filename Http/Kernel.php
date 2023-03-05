@@ -27,6 +27,7 @@ class Kernel
      * send GET request
      *
      * @param string $url
+     * @throws internetConnectionError not connected to internet
      * @return string
      */
     public static function Get(string $url): string
@@ -43,6 +44,7 @@ class Kernel
      *
      * @param string $url
      * @param array $data data in array type
+     * @throws internetConnectionError not connected to internet
      * @return string
      */
     public static function Post(string $url, array $data): string
@@ -75,6 +77,7 @@ class Kernel
      * testing is url available
      *
      * @param string $url
+     * @throws internetConnectionError not connected to internet
      * @return boolean true for available and false if isn't available
      */
     public static function is_on(string $url): bool
@@ -116,6 +119,8 @@ class Kernel
      * @param string|Account $auth account auth or account info(in Account type)
      * @param array|object $datas request data
      * @param boolean $setTmpSession true for replace 'tmp_session' instead of 'auth' in request
+     * @throws internetConnectionError not connected to internet
+     * @throws APIError server not returned a response
      * @return array|false array if is it successful or false if its failed
      */
     public static function send_request(Account $account, array|object $datas, bool $setTmpSession = false): array|false
