@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rubika;
 
 use Exception;
+use fast;
 use Rubika\assets\login;
 use Rubika\Exception\{
     CodeIsExpired,
@@ -319,7 +320,7 @@ class Bot
      * @throws invalidOptions message options is invalid
      * @return array|false
      */
-    public function editMessage(string $guid, int $message_id,  string $text, array $options): array|false
+    public function editMessage(string $guid, int $message_id,  string $text, array $options = []): array|false
     {
         $no = "\n\n";
         $index = mb_str_split($options['index']);
@@ -405,6 +406,20 @@ class Bot
             'action' => 'Pin'
         ];
         return Kernel::send('deleteMessages', $data, $this->account);
+    }
+
+    public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        $response = $this->requestSendFile(basename($filePath), filesize($filePath));
+        if ($response['status' != 'OK']) {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        } else {
+            $response = $response['data'];
+        }
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
     }
 
     /**
@@ -599,17 +614,6 @@ class Bot
     }
 
     /**
-     * set new config to /.rubika_config/.[PHONE_HASH].base64 file
-     *
-     * @param array $data
-     * @return void
-     */
-    private function set_configs(array $data): void
-    {
-        file_put_contents(".rubika_config/." . $this->ph_name . ".base64", base64_encode(serialize($data)));
-    }
-
-    /**
      * send login SMS to phone number
      *
      * @param integer $phone
@@ -645,12 +649,19 @@ class Bot
         ], $this->account, true);
     }
 
+    /**
+     * request server for uploading a file
+     *
+     * @param string $file_namename of file
+     * @param integer $size size of file
+     * @return array|false array if is it successful or false if its failed
+     */
     private function requestSendFile(string $file_name, int $size): array|false
     {
         return Kernel::send('requestSendFile', [
             "file_name" => $file_name,
             "size" => $size,
-            "mime" => explode("/", mime_content_type($file_name))
+            "mime" => explode("/", mime_content_type($file_name))[1]
         ], $this->account, true);
     }
 }
