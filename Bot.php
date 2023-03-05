@@ -73,7 +73,7 @@ class Bot
                 ?>
                 <?php
                 if (!$ex) {
-                    $result = $this->sendSMS($phone, $acc);
+                    $result = $this->sendSMS($phone);
                     if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
                         if ($result['has_confirmed_recovery_email']) {
                             new login('two-step', $result['hint_pass_key']);
@@ -89,7 +89,7 @@ class Bot
                     }
                 } elseif ($ex && $_POST == []) {
                     if (empty($acc->user->user_guid)) {
-                        $result = $this->sendSMS($phone, $acc);
+                        $result = $this->sendSMS($phone);
                         if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
                             if ($result['has_confirmed_recovery_email']) {
                                 new login('two-step', $result['hint_pass_key']);
@@ -112,7 +112,7 @@ class Bot
                     }
                 } elseif ($ex && isset($_POST['password']) && $_POST['password'] != '') {
                     if (!SET_UP && empty($acc->user->user_guid)) {
-                        $result = $this->sendSMS($phone, $acc, $_POST['password']);
+                        $result = $this->sendSMS($phone, $_POST['password']);
                         if ($result['status'] == 'InvalidPassKey') {
                             throw new invalidPassword('two-step verifition password is not correct');
                         } else {
@@ -131,7 +131,7 @@ class Bot
                         if (empty($code)) {
                             throw new invalidCode('code is not valid');
                         }
-                        $result = $this->signIn($phone, $acc, $hash, (int)$code);
+                        $result = $this->signIn($phone, $hash, (int)$code);
                         if ($result['status'] == 'CodeIsInvalid') {
                             throw new CodeIsInvalid('login code is not true');
                         } elseif ($result['status'] == 'CodeIsExpired') {
@@ -166,7 +166,7 @@ class Bot
                 }
                 $this->account = $acc;
                 if (empty($acc->user->user_guid)) {
-                    $result = $this->sendSMS($phone, $acc);
+                    $result = $this->sendSMS($phone);
                     if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
                         if ($result['has_confirmed_recovery_email']) {
                             do {
@@ -178,7 +178,7 @@ class Bot
                                 }
                                 $pass = readline();
                             } while (empty($pass));
-                            $result = $this->sendSMS($phone, $acc, $pass);
+                            $result = $this->sendSMS($phone, $pass);
                             if ($result['status'] == 'InvalidPassKey') {
                                 throw new invalidPassword(Color::color(' two-step verifition password is not correct ', 'red'));
                             }
@@ -208,7 +208,7 @@ class Bot
                         if (empty($code)) {
                             throw new invalidCode(Color::color(' code is not valid ', background: 'red'));
                         }
-                        $result = $this->signIn($phone, $acc, $hash, (int)$code);
+                        $result = $this->signIn($phone, $hash, (int)$code);
                         if ($result['status'] == 'CodeIsInvalid') {
                             throw new CodeIsInvalid(Color::color(' login code is not true', 'red'));
                         } elseif ($result['status'] == 'CodeIsExpired') {
@@ -306,7 +306,7 @@ class Bot
         }
         return Kernel::send('sendMessage', $data, $this->account);
     }
-    
+
     /**
      * edit message in chat
      *
@@ -613,11 +613,10 @@ class Bot
      * send login SMS to phone number
      *
      * @param integer $phone
-     * @param Account $acc account object
      * @param string $password two-step verifition password
      * @return array|false array if is it successful or false if its failed
      */
-    private function sendSMS(int $phone, Account $acc, string $password = ''): array|false
+    private function sendSMS(int $phone, string $password = ''): array|false
     {
         $i = [
             'phone_number' => '98' . (string)$phone,
@@ -626,24 +625,32 @@ class Bot
         if (!empty($password)) {
             $i['pass_key'] = $password;
         }
-        return Kernel::send('sendCode', $i, $acc, true);
+        return Kernel::send('sendCode', $i, $this->account, true);
     }
 
     /**
      * signing to account
      *
      * @param integer $phone
-     * @param Account $acc account object
      * @param string $hash phone_code_hash
      * @param integer $code phone_code
      * @return array|false array if is it successful or false if its failed
      */
-    private function signIn(int $phone, Account $acc, string $hash, int $code): array|false
+    private function signIn(int $phone, string $hash, int $code): array|false
     {
         return Kernel::send('signIn', [
             "phone_number" => '98' . (string)$phone,
             "phone_code_hash" => $hash,
             "phone_code" => $code
-        ], $acc, true);
+        ], $this->account, true);
+    }
+
+    private function requestSendFile(string $file_name, int $size): array|false
+    {
+        return Kernel::send('requestSendFile', [
+            "file_name" => $file_name,
+            "size" => $size,
+            "mime" => explode("/", mime_content_type($file_name))
+        ], $this->account, true);
     }
 }
