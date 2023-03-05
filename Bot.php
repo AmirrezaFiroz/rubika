@@ -648,20 +648,16 @@ class Bot
             "phone_code" => $code
         ], $this->account, true);
     }
-
-    /**
-     * request server for uploading a file
-     *
-     * @param string $file_namename of file
-     * @param integer $size size of file
-     * @return array|false array if is it successful or false if its failed
-     */
-    private function requestSendFile(string $file_name, int $size): array|false
-    {
-        return Kernel::send('requestSendFile', [
-            "file_name" => $file_name,
-            "size" => $size,
-            "mime" => explode("/", mime_content_type($file_name))[1]
-        ], $this->account, true);
-    }
+    // if (function_exists('curl_file_create')) { // php 5.5+
+    //     $cFile = curl_file_create($file_name_with_full_path);
+    //   } else { // 
+    //     $cFile = '@' . realpath($file_name_with_full_path);
+    //   }
+    //   $post = array('extra_info' => '123456','file_contents'=> $cFile);
+    //   $ch = curl_init();
+    //   curl_setopt($ch, CURLOPT_URL,$target_url);
+    //   curl_setopt($ch, CURLOPT_POST,1);
+    //   curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+    //   $result=curl_exec ($ch);
+    //   curl_close ($ch);
 }

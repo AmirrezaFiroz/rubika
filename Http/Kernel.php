@@ -231,4 +231,20 @@ class Kernel
         }
         return $links;
     }
+    
+    /**
+     * request server for uploading a file
+     *
+     * @param string $file_namename of file
+     * @param integer $size size of file
+     * @return array|false array if is it successful or false if its failed
+     */
+    private function requestSendFile(string $file_name, int $size): array|false
+    {
+        return Kernel::send('requestSendFile', [
+            "file_name" => $file_name,
+            "size" => $size,
+            "mime" => explode("/", mime_content_type($file_name))[1]
+        ], $this->account, true);
+    }
 }
