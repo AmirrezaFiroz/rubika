@@ -14,11 +14,7 @@ use WebSocket\Client as websocket;
 abstract class Client extends Bot
 {
     /**
-     * @throws Exception\ERROR_GENERIC
-     * @throws Exception\invalidPassword
-     * @throws Exception\notRegistered
-     * @throws Exception\InvalidPhoneNumber
-     * @throws Exception\invalidCode
+     * @throws internetConnectionError error in testing socket links
      */
     public function __construct(int $phone, bool $runWeb = false)
     {

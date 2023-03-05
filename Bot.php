@@ -36,6 +36,20 @@ class Bot
 
     private string $ph_name;
 
+    /**
+     * initialize client
+     *
+     * @param integer $phone account phone number with format : 9123456789
+     * @param string $index
+     * @throws ERROR_GENERIC some things went wrong
+     * @throws notRegistered session has been terminated
+     * @throws invalidPassword two-step verifition password is not correct
+     * @throws web_ConfigFileError config file was deleted and re-setup (web mode)
+     * @throws noIndexFileExists indexing fule not found (web mode)
+     * @throws invalidCode invalid login code
+     * @throws CodeIsExpired login code is expired
+     * @throws InvalidPhoneNumber invalid phone number format
+     */
     public function __construct(
         private int $phone,
         $index = ''
@@ -265,6 +279,7 @@ class Bot
      * @param array $options options of message. (like telegram markup)
      * examples:
      * https://rubika-library.github.io/docs/options
+     * @throws invalidOptions message options is invalid
      * @return array|false
      */
     public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options = []): array|false
@@ -291,7 +306,7 @@ class Bot
         }
         return Kernel::send('sendMessage', $data, $this->account);
     }
-
+    
     /**
      * edit message in chat
      *
@@ -301,6 +316,7 @@ class Bot
      * @param array $options options of message. (like telegram markup)
      * examples:
      * https://rubika-library.github.io/docs/options
+     * @throws invalidOptions message options is invalid
      * @return array|false
      */
     public function editMessage(string $guid, int $message_id,  string $text, array $options): array|false
