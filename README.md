@@ -101,6 +101,7 @@ try {
 |  11   |                                invalid message options                                |
 |  12   |                           library cant find web index file                            |
 |  13   | account new username is already exists on server and you can't set it as new username |
+|  14   |                                    invalid action                                     |
 
 # web mode
 
@@ -140,12 +141,4 @@ Fast(function ($update, $obj) {
         $obj->sendMessage($user_id, 'پیامتان دریافت شد ;)');
     }
 }, 9123456789);
-```
-
-# Docker
-you can create a docker container and develop your bot in that
-
-```bash
-cd vendor/rubika/rubika/Docker
-docker-compose up
 ```

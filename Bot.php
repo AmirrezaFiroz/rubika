@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Rubika;
 
 use Exception;
-use fast;
 use Rubika\assets\login;
 use Rubika\Exception\{
     CodeIsExpired,
     CodeIsInvalid,
     InvalidPhoneNumber,
     ERROR_GENERIC,
+    invalidAction,
     invalidCode,
     invalidOptions,
     invalidPassword,
@@ -27,8 +27,10 @@ use Rubika\Tools\{
     Printing,
     System
 };
-use Rubika\Types\Account;
-use WebSocket\Client as websocket;
+use Rubika\Types\{
+    Account,
+    Actions
+};
 use Symfony\Component\Yaml\Yaml;
 
 class Bot
@@ -406,6 +408,32 @@ class Bot
             'action' => 'Pin'
         ];
         return Kernel::send('deleteMessages', $data, $this->account);
+    }
+
+    /**
+     * send chating actions
+     *
+     * @param string $chat_id user guid
+     * @param Actions $action action:
+     * 
+     * typing, uploading, recording
+     * @return void
+     */
+    public function sendChatAction(string $chat_id, Actions $action)
+    {
+        if ($action->value() == '') {
+            throw new invalidAction('action not exists');
+        } else {
+            $action = $action->value();
+        }
+        return Kernel::send(
+            'sendChatActivity',
+            [
+                'object_guid' => $chat_id,
+                'activity' => $action
+            ],
+            $this->account
+        );
     }
 
     public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
