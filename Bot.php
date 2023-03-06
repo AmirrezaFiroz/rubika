@@ -38,6 +38,7 @@ class Bot
     public ?Account $account;
 
     private string $ph_name;
+    public bool $autoSendAction = false;
 
     /**
      * initialize client
@@ -394,6 +395,45 @@ class Bot
     }
 
     /**
+     * send chating actions
+     *
+     * @param string $chat_id user guid
+     * @param Actions $action action:
+     * 
+     * typing, uploading, recording
+     * @return void
+     */
+    public function sendChatAction(string $chat_id, Actions $action): array|false
+    {
+        if ($action->value() == '') {
+            throw new invalidAction('action not exists');
+        } else {
+            $action = $action->value();
+        }
+        return Kernel::send('sendChatActivity', [
+            "object_guid" => $chat_id,
+            "activity" => $action
+        ], $this->account);
+    }
+
+    public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, filesize($filePath));
+        if ($response['status' != 'OK']) {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        } else {
+            $response = $response['data'];
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($chat_id, new Actions('typing'));
+        }
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+    }
+
+    /**
      * pin message in chat
      *
      * @param string $guid chat guid
@@ -408,46 +448,6 @@ class Bot
             'action' => 'Pin'
         ];
         return Kernel::send('deleteMessages', $data, $this->account);
-    }
-
-    /**
-     * send chating actions
-     *
-     * @param string $chat_id user guid
-     * @param Actions $action action:
-     * 
-     * typing, uploading, recording
-     * @return void
-     */
-    public function sendChatAction(string $chat_id, Actions $action)
-    {
-        if ($action->value() == '') {
-            throw new invalidAction('action not exists');
-        } else {
-            $action = $action->value();
-        }
-        return Kernel::send(
-            'sendChatActivity',
-            [
-                'object_guid' => $chat_id,
-                'activity' => $action
-            ],
-            $this->account
-        );
-    }
-
-    public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
-    {
-        $response = Kernel::requestSendFile(basename($filePath), $this->account, filesize($filePath));
-        if ($response['status' != 'OK']) {
-            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
-        } else {
-            $response = $response['data'];
-        }
-        $id = $response['id'];
-        $dc_id = $response['dc_id'];
-        $access_hash_send = $response['access_hash_send'];
-        $upload_url = $response['upload_url'];
     }
 
     /**

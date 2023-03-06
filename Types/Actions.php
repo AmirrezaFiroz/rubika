@@ -7,7 +7,7 @@ namespace Rubika\Types;
  */
 class Actions
 {
-    private static string $action = '';
+    private string $action = '';
 
     function __construct(string $action)
     {
