@@ -288,8 +288,8 @@ class Bot
      */
     public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options = []): array|false
     {
-        $no = "\n\n";
         if ($options != []) {
+            $no = "\n\n";
             $index = mb_str_split($options['index']);
             unset($options['index']);
             if (count($index) >= 1 && count($index) <= 3) {
@@ -401,6 +401,7 @@ class Bot
      * @param Actions $action action:
      * 
      * typing, uploading, recording
+     * @throws invalidAction invalid action
      * @return void
      */
     public function sendChatAction(string $chat_id, Actions $action): array|false
@@ -431,6 +432,73 @@ class Bot
         $dc_id = $response['dc_id'];
         $access_hash_send = $response['access_hash_send'];
         $upload_url = $response['upload_url'];
+
+        $content = file_get_contents($filePath);
+        $chunk_size = 131072;
+        $header = [
+            'auth' => $this->account->auth,
+            'Host' => str_replace(['https://', '/UploadFile.ashx'], '', $upload_url),
+            'chunk-size' => (string)filesize($filePath),
+            'part-number' => "1",
+            'total-part' => "1",
+            'file-id' => (string)$id,
+            'access-hash-send' => $access_hash_send,
+            'content-type' => "application/octet-stream",
+            'content-length' => (string)filesize($filePath),
+            'accept-encoding' => "gzip", "user-agent" => "okhttp/3.12.1"
+        ];
+        $ch = curl_init($upload_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        if (strlen($content) <= $chunk_size) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $content);
+            $response = curl_exec($ch);
+        } else {
+            $chunks = str_split($content, $chunk_size);
+            foreach ($chunks as $i => $chunk) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $chunk);
+                $response = curl_exec($ch);
+            }
+        }
+        if (curl_errno($ch)) {
+            echo 'Error:' . curl_error($ch);
+        }
+        curl_close($ch);
+
+        var_dump($response);
+
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+
+        $data = [
+            'object_guid' => $chat_id,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'text' => $caption . $no,
+            "file_inline" => [
+                "dc_id" => $dc_id,
+                "file_id" => $id,
+                "type" => 'File',
+                "file_name" => basename($filePath),
+                "size" => filesize($filePath),
+                "mime" => explode("/", mime_content_type($filePath))[1],
+                "access_hash_rec" => $response['data']['access_hash_rec']
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        return Kernel::send('sendMessage', $data, $this->account);
     }
 
     /**
