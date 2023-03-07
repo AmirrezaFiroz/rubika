@@ -189,14 +189,20 @@ class Kernel
      * @param array $data
      * @return array|false  array if is it successful or false if its failed
      */
-    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false): array|false
+    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false, bool $c5 = true): array|false
     {
         $r = self::send_request($account, [
             'method' => $method,
             'input' => $data,
-            'client' => [
+            'client' => $c5 ? [
                 "app_name" => "Main",
                 "app_version" => "4.1.11",
+                "platform" => "Web",
+                "package" => "web.rubika.ir",
+                "lang_code" => "fa"
+            ] : [
+                "app_name" => "Main",
+                "app_version" => "4.2.0",
                 "platform" => "Web",
                 "package" => "web.rubika.ir",
                 "lang_code" => "fa"
@@ -241,10 +247,11 @@ class Kernel
      */
     public static function requestSendFile(string $file_name, Account $acc, int $size): array|false
     {
+        $e = explode(".", $file_name);
         return self::send('requestSendFile', [
             "file_name" => $file_name,
             "size" => $size,
-            "mime" => explode("/", mime_content_type($file_name))[1]
-        ], $acc, true);
+            "mime" => end($e)
+        ], $acc);
     }
 }
