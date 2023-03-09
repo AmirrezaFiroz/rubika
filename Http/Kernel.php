@@ -255,7 +255,19 @@ class Kernel
         ], $acc);
     }
 
-    public static function uploadFile(string $url, int $size, string $access_hash_send, string $fid, $content, Account $Acc)
+    /**
+     * upload file to server
+     *
+     * @param string $url upload url
+     * @param integer $size file size (in byte)
+     * @param string $access_hash_send
+     * @param string $fid file id
+     * @param string $content file content
+     * @param Account $Acc account datas for getting auth of account
+     * @throws APIError connection error
+     * @return string returns access_hash_rec of file
+     */
+    public static function uploadFile(string $url, int $size, string $access_hash_send, string $fid, string $content, Account $Acc): string
     {
         if (!self::is_on($url)) {
             throw new APIError('server not responsed');
@@ -283,8 +295,37 @@ class Kernel
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => $content
             ]);
-            $r = curl_exec($c);
+            $r = json_decode(curl_exec($c), true);
             curl_close($c);
+            return $r['data']['access_hash_rec'];
+        } else {
+            $total = (int)(($size / 131072) + 1);
+            for ($i = 1; $i <= $total; $i++) {
+                $which_chunk_now = ($i - 1) * 131072;
+                $header["chunk-size"] = ($i != $total ? "131072" : (string)strlen(substr($content, $which_chunk_now)));
+                $header["part-number"] = (string)$i;
+                $header["total-part"] = (string)$total;
+                $data = ($i != $total ? substr($content, $which_chunk_now, $which_chunk_now + 131072) : substr($content, $which_chunk_now));
+                while (true) {
+                    $c = curl_init($url);
+                    curl_setopt_array($c, [
+                        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+                        CURLOPT_SSL_VERIFYHOST => false,
+                        CURLOPT_SSL_VERIFYPEER => false,
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_HTTPHEADER => array_map(function ($key) use ($headers) {
+                            return "$key: {$headers[$key]}";
+                        }, array_keys($headers)),
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => $data
+                    ]);
+                    $r = json_decode(curl_exec($c), true);
+                    curl_close($c);
+                }
+                if ($i == $total) {
+                    return $r['data']['access_hash_rec'];
+                }
+            }
         }
     }
 }

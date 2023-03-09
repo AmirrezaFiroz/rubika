@@ -275,7 +275,7 @@ class Bot
     }
 
     /**
-     * send message to user
+     * send message to user or channel or group
      *
      * @param string $guid user guid
      * @param string $text message
@@ -417,7 +417,17 @@ class Bot
         ], $this->account);
     }
 
-    public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []) //: array|false
+    /**
+     * send a file to a user or group or channel
+     *
+     * @param string $chat_id user guid
+     * @param string $filePath file diretion
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @return array|false
+     */
+    public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
     {
         $contents = fopen($filePath, 'rb');
         $content = fread($contents, filesize($filePath));
@@ -437,7 +447,42 @@ class Bot
         $access_hash_send = $response['access_hash_send'];
         $upload_url = $response['upload_url'];
 
-        Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+        $e = explode(".", basename($filePath));
+        $data = [
+            'object_guid' => $chat_id,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "File",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'access_hash_rec' => $access_hash_rec
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if($caption != ''){
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
+        var_dump($data);
+
+        return Kernel::send('sendMessage', $data, $this->account);
     }
 
     /**
