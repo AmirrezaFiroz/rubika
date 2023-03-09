@@ -101,7 +101,7 @@ class Kernel
                     'Access-Control-Request-Headers: content-type',
                     'Referer: https://web.rubika.ir/',
                     'Origin: https://web.rubika.ir',
-                    'Connection: keep-alive',
+                    'Connection: keep-alive'
                 ],
             ]);
             curl_exec($c);
@@ -253,5 +253,38 @@ class Kernel
             "size" => $size,
             "mime" => end($e)
         ], $acc);
+    }
+
+    public static function uploadFile(string $url, int $size, string $access_hash_send, string $fid, $content, Account $Acc)
+    {
+        if (!self::is_on($url)) {
+            throw new APIError('server not responsed');
+        }
+        $size = (string)$size;
+        $headers = [
+            'access-hash-send' => $access_hash_send,
+            'auth' => $Acc->auth,
+            'chunk-size' => $size,
+            'file-id' => $fid,
+            'part-number' => '1',
+            'total-part' => '1'
+        ];
+        $size = (int)$size;
+        if ($size <= 131072) {
+            $c = curl_init($url);
+            curl_setopt_array($c, [
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => array_map(function ($key) use ($headers) {
+                    return "$key: {$headers[$key]}";
+                }, array_keys($headers)),
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $content
+            ]);
+            $r = curl_exec($c);
+            curl_close($c);
+        }
     }
 }
