@@ -299,10 +299,8 @@ class Kernel
             curl_close($c);
             return $r['data']['access_hash_rec'];
         } else {
-            $total = (int)(($size / 131072) + 1);
-            echo "total : $total\n"; // rm
+            $total = (int)($size / (131072 + 1));
             for ($i = 1; $i <= $total; $i++) {
-                echo "starting $i\n"; // rm
                 $which_chunk_now = ($i - 1) * 131072;
                 $header["chunk-size"] = ($i != $total ? "131072" : (string)strlen(substr($content, $which_chunk_now)));
                 $header["part-number"] = (string)$i;
@@ -320,9 +318,11 @@ class Kernel
                     CURLOPT_POST => true,
                     CURLOPT_POSTFIELDS => $data
                 ]);
-                var_dump(curl_exec($c)); // rm
+                $r = json_decode(curl_exec($c), true);
                 curl_close($c);
-                echo "end $i\n"; // rm
+                if ($i == $total) {
+                    return $r['data']['access_hash_rec'];
+                }
             }
         }
     }
