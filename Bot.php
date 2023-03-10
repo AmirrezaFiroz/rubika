@@ -24,6 +24,7 @@ use Rubika\Http\Kernel;
 use Rubika\Tools\{
     Color,
     Crypto,
+    File,
     Printing,
     System
 };
@@ -420,14 +421,14 @@ class Bot
     /**
      * send a file to a user or group or channel
      *
-     * @param string $chat_id user guid
+     * @param string $guid user guid
      * @param string $filePath file diretion
      * @param integer $reply_to_message_id
      * @param string $caption
      * @param array $options
      * @return array|false
      */
-    public function sendFile(string $chat_id, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    public function sendFile(string $guid, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
     {
         $contents = fopen($filePath, 'rb');
         $content = fread($contents, filesize($filePath));
@@ -439,7 +440,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($chat_id, new Actions('typing'));
+            $this->sendChatAction($guid, new Actions('uploading'));
         }
 
         $id = $response['id'];
@@ -462,7 +463,7 @@ class Bot
         }
         $e = explode(".", basename($filePath));
         $data = [
-            'object_guid' => $chat_id,
+            'object_guid' => $guid,
             'rnd' => (string)mt_rand(100000, 999999),
             'file_inline' => [
                 'dc_id' => $dc_id,
@@ -477,10 +478,70 @@ class Bot
         if ($reply_to_message_id != 0) {
             $data['reply_to_message_id'] = $reply_to_message_id;
         }
-        if($caption != ''){
+        if ($caption != '') {
             $data['text'] = $caption . isset($no) ? $no : '';
         }
-        var_dump($data);
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    public function sendPhoto(string $guid, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        list($width, $height) = getimagesize($filePath);
+        $contents = fopen($filePath, 'rb');
+        $content = fread($contents, filesize($filePath));
+        fclose($contents);
+        $size = strlen($content);
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
+        
+        if (isset($response['status']) && $response['status'] != 'OK') {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('typing'));
+        }
+        
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+        $e = explode(".", basename($filePath));
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "Image",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'thumb_inline' => File::getThumbInline($content),
+                'width' => $width,
+                'height' => $height,
+                'access_hash_rec' => $access_hash_rec
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if ($caption != '') {
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
 
         return Kernel::send('sendMessage', $data, $this->account);
     }

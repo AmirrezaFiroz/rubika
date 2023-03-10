@@ -300,31 +300,29 @@ class Kernel
             return $r['data']['access_hash_rec'];
         } else {
             $total = (int)(($size / 131072) + 1);
+            echo "total : $total\n"; // rm
             for ($i = 1; $i <= $total; $i++) {
+                echo "starting $i\n"; // rm
                 $which_chunk_now = ($i - 1) * 131072;
                 $header["chunk-size"] = ($i != $total ? "131072" : (string)strlen(substr($content, $which_chunk_now)));
                 $header["part-number"] = (string)$i;
                 $header["total-part"] = (string)$total;
                 $data = ($i != $total ? substr($content, $which_chunk_now, $which_chunk_now + 131072) : substr($content, $which_chunk_now));
-                while (true) {
-                    $c = curl_init($url);
-                    curl_setopt_array($c, [
-                        CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-                        CURLOPT_SSL_VERIFYHOST => false,
-                        CURLOPT_SSL_VERIFYPEER => false,
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_HTTPHEADER => array_map(function ($key) use ($headers) {
-                            return "$key: {$headers[$key]}";
-                        }, array_keys($headers)),
-                        CURLOPT_POST => true,
-                        CURLOPT_POSTFIELDS => $data
-                    ]);
-                    $r = json_decode(curl_exec($c), true);
-                    curl_close($c);
-                }
-                if ($i == $total) {
-                    return $r['data']['access_hash_rec'];
-                }
+                $c = curl_init($url);
+                curl_setopt_array($c, [
+                    CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => array_map(function ($key) use ($headers) {
+                        return "$key: {$headers[$key]}";
+                    }, array_keys($headers)),
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $data
+                ]);
+                var_dump(curl_exec($c)); // rm
+                curl_close($c);
+                echo "end $i\n"; // rm
             }
         }
     }
