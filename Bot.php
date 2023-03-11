@@ -35,6 +35,7 @@ use Rubika\Types\{
     Actions
 };
 use Symfony\Component\Yaml\Yaml;
+use getID3;
 
 class Bot
 {
@@ -526,7 +527,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('typing'));
+            $this->sendChatAction($guid, new Actions('uploading'));
         }
 
         $id = $response['id'];
@@ -562,6 +563,97 @@ class Bot
                 'width' => $width,
                 'height' => $height,
                 'access_hash_rec' => $access_hash_rec
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if ($caption != '') {
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    /**
+     * send music to user ot group or channel
+     *
+     * @param string $guid
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @throws fileNotFound file not exists
+     * @throws fileTypeError invalid file
+     * @return array|false
+     */
+    public function sendMusic(string $guid, string $filePath, bool $auto_play = false, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+        $e = explode(".", basename($filePath));
+        if (end($e) != 'mp3') {
+            throw new fileTypeError('invalid file');
+        }
+
+        $contents = fopen($filePath, 'rb');
+        $content = fread($contents, filesize($filePath));
+        fclose($contents);
+        $size = strlen($content);
+
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
+
+        if (isset($response['status']) && $response['status'] != 'OK') {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('uploading'));
+        }
+
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+
+        $getID3 = new getID3;
+        $file = $getID3->analyze('/path/to/file.mp3');
+        $artist = $file['tags']['id3v2']['artist'][0];
+        $ThisFileInfo = $getID3->analyze($filePath);
+        $len = @$ThisFileInfo['playtime_string'];
+
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'auto_play' => $auto_play,
+                // 'height' => 0.0,
+                // 'width' => 0.0,
+                'music_performer' => $artist,
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "Image",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'thumb_inline' => File::getThumbInline($content),
+                'access_hash_rec' => $access_hash_rec,
+                'time' => $len
             ]
         ];
         if ($reply_to_message_id != 0) {
