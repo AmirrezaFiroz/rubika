@@ -189,12 +189,12 @@ class Kernel
      * @param array $data
      * @return array|false  array if is it successful or false if its failed
      */
-    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false, bool $c5 = true): array|false
+    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false, bool $c = true): array|false
     {
         $r = self::send_request($account, [
             'method' => $method,
             'input' => $data,
-            'client' => $c5 ? [
+            'client' => $c ? [
                 "app_name" => "Main",
                 "app_version" => "4.1.11",
                 "platform" => "Web",

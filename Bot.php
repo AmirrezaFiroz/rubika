@@ -576,7 +576,7 @@ class Bot
     }
 
     /**
-     * send music to user ot group or channel
+     * send video to user ot group or channel
      *
      * @param string $guid
      * @param string $filePath file path(if in corrent directory, jsut path file name)
@@ -587,13 +587,13 @@ class Bot
      * @throws fileTypeError invalid file
      * @return array|false
      */
-    public function sendMusic(string $guid, string $filePath, bool $auto_play = false, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    public function sendVideo(string $guid, string $filePath, bool $auto_play = false, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
     {
         if (!is_file($filePath)) {
             throw new fileNotFound('file not exists');
         }
         $e = explode(".", basename($filePath));
-        if (end($e) != 'mp3') {
+        if (end($e) != 'mp4') {
             throw new fileTypeError('invalid file');
         }
 
@@ -632,28 +632,26 @@ class Bot
         }
 
         $getID3 = new getID3;
-        $file = $getID3->analyze('/path/to/file.mp3');
-        $artist = $file['tags']['id3v2']['artist'][0];
-        $ThisFileInfo = $getID3->analyze($filePath);
-        $len = @$ThisFileInfo['playtime_string'];
+        $file = $getID3->analyze('/path/to/video.mp4');
+        $duration = $file['playtime_seconds'];
+        $width = $file['video']['resolution_x'];
+        $height = $file['video']['resolution_y'];
 
         $data = [
             'object_guid' => $guid,
             'rnd' => (string)mt_rand(100000, 999999),
             'file_inline' => [
                 'auto_play' => $auto_play,
-                // 'height' => 0.0,
-                // 'width' => 0.0,
-                'music_performer' => $artist,
+                'height' => $height,
+                'width' => $width,
                 'dc_id' => $dc_id,
                 'file_id' => $id,
-                'type' => "Image",
+                'type' => "Video",
                 'file_name' => basename($filePath),
                 'size' => $size,
                 'mime' => end($e),
-                'thumb_inline' => File::getThumbInline($content),
                 'access_hash_rec' => $access_hash_rec,
-                'time' => $len
+                'time' => $duration
             ]
         ];
         if ($reply_to_message_id != 0) {
@@ -663,7 +661,7 @@ class Bot
             $data['text'] = $caption . isset($no) ? $no : '';
         }
 
-        return Kernel::send('sendMessage', $data, $this->account);
+        return Kernel::send('sendMessage', $data, $this->account, c: false);
     }
 
     /**
