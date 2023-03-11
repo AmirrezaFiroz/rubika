@@ -7,7 +7,7 @@ namespace Rubika\Exception;
  */
 final class internetConnectionError extends Error
 {
-    public function __construct(string $error = 'not have internet connection')
+    public function __construct(string $error)
     {
         parent::__construct($error, 3);
     }

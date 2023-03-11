@@ -102,6 +102,8 @@ try {
 |  12   |                           library cant find web index file                            |
 |  13   | account new username is already exists on server and you can't set it as new username |
 |  14   |                                    invalid action                                     |
+|  15   |                                    not file exists                                    |
+|  16   |                                  file mie is invalid                                  |
 
 # web mode
 

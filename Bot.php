@@ -11,6 +11,8 @@ use Rubika\Exception\{
     CodeIsInvalid,
     InvalidPhoneNumber,
     ERROR_GENERIC,
+    fileNotFound,
+    fileTypeError,
     invalidAction,
     invalidCode,
     invalidOptions,
@@ -422,14 +424,19 @@ class Bot
      * send a file to a user or group or channel
      *
      * @param string $guid user guid
-     * @param string $filePath file diretion
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
      * @param integer $reply_to_message_id
      * @param string $caption
      * @param array $options
+     * @throws fileNotFound file not exists
      * @return array|false
      */
     public function sendFile(string $guid, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
     {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+
         $contents = fopen($filePath, 'rb');
         $content = fread($contents, filesize($filePath));
         fclose($contents);
@@ -485,22 +492,43 @@ class Bot
         return Kernel::send('sendMessage', $data, $this->account);
     }
 
+    /**
+     * send photo to user ot group or channel
+     *
+     * @param string $guid
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @throws fileNotFound file not exists
+     * @throws fileTypeError invalid file
+     * @return array|false
+     */
     public function sendPhoto(string $guid, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
     {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+        $e = explode(".", basename($filePath));
+        if (!in_array(end($e), ['png', 'jpg', 'jpeg'])) {
+            throw new fileTypeError('invalid file');
+        }
+
         list($width, $height) = getimagesize($filePath);
         $contents = fopen($filePath, 'rb');
         $content = fread($contents, filesize($filePath));
         fclose($contents);
         $size = strlen($content);
+
         $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
-        
+
         if (isset($response['status']) && $response['status'] != 'OK') {
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
             $this->sendChatAction($guid, new Actions('typing'));
         }
-        
+
         $id = $response['id'];
         $dc_id = $response['dc_id'];
         $access_hash_send = $response['access_hash_send'];
@@ -519,7 +547,7 @@ class Bot
                 throw new invalidOptions("your options's arrange is invalid");
             }
         }
-        $e = explode(".", basename($filePath));
+
         $data = [
             'object_guid' => $guid,
             'rnd' => (string)mt_rand(100000, 999999),
