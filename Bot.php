@@ -839,6 +839,32 @@ class Bot
     }
 
     /**
+     * send location to user, group or channel
+     *
+     * @param string $guid
+     * @param float $latitude
+     * @param float $longitude
+     * @param integer $reply_to_message_id
+     * @return array|false
+     */
+    public function sendLocation(string $guid, float $latitude, float $longitude, int $reply_to_message_id = 0): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'location' => [
+                'latitude' => $latitude,
+                'longitude' => $longitude
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    /**
      * pin message in chat
      *
      * @param string $guid chat guid
