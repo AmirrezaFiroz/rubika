@@ -3,4 +3,4 @@ composer.lock
 .idea/
 test.*
 .rubika_config/
-todo.*
+todo.txt

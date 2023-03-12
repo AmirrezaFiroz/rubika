@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rubika;
 
 use Exception;
+use fast;
 use Rubika\assets\login;
 use Rubika\Exception\{
     CodeIsExpired,
@@ -263,6 +264,35 @@ class Bot
     public function getMe(bool $array = false): Account|array
     {
         return $array ? $this->account->to_array() : $this->account;
+    }
+
+    /** 
+     * get account sessions
+     * 
+     * @return array|false
+     */
+    public function getMySessions(): array|false
+    {
+        return Kernel::send('getMySessions', [], $this->account);
+    }
+    /** 
+     * terminate other account sessions
+     * 
+     * @return array|false
+     */
+    public function terminateOtherSessions(): array|false
+    {
+        return Kernel::send('terminateOtherSessions', [], $this->account);
+    }
+
+    /**
+     * logout account
+     *
+     * @return void
+     */
+    public function logout(): void
+    {
+        Kernel::send('logout', [], $this->account);
     }
 
     /** 
@@ -976,18 +1006,6 @@ class Bot
     }
 
     /**
-     * get chat list
-     *
-     * @return array|false
-     */
-    public function getChats(): array|false
-    {
-        return Kernel::send('setBlockUser', [
-            "start_id" => null
-        ], $this->account);
-    }
-
-    /**
      * mute chat notifocations
      *
      * @param string $guid chat id
@@ -1013,6 +1031,161 @@ class Bot
             "action" => "Unmute",
             "object_guid" => $guid
         ], $this->account);
+    }
+
+    /**
+     * get all chats, channels and groups
+     *
+     * @return array|false
+     */
+    public function getChats(): array|false
+    {
+        return Kernel::send('getChats', [], $this->account);
+    }
+
+    /**
+     * get new updates
+     *
+     * @return array|false
+     */
+    public function getChatsUpdates(): array|false
+    {
+        return Kernel::send('getChatsUpdates', ['state' => time()], $this->account);
+    }
+
+    /** 
+     * search text from a chat
+     * 
+     * @param string $object_guid grop or user or channel or ... id for search
+     * @param string $search_text text for search
+     * @param string $type:
+     * Hashtag, Text
+     * @return array|false
+     */
+    public function searchChatMessages(string $object_guid, string $search_text, string $type = 'Text'): array|false
+    {
+        return Kernel::send('searchChatMessages', [
+            'search_text' => $search_text,
+            'type' => $type,
+            'object_guid' => $object_guid
+        ], $this->account);
+    }
+
+    /** 
+     * global seach to find a special user, channel or group
+     *  
+     * @param string $search_text text for search
+     * @return array|false
+     */
+    public function searchGlobalObjects(string $search_text): array|false
+    {
+        return Kernel::send('searchGlobalObjects', ['search_text' => $search_text], $this->account);
+    }
+
+    /** 
+     * global(in account) search for messages
+     * 
+     * @param string $search_text text for search
+     * @param string $type:
+     * Hashtag, Text
+     * @return array|false
+     */
+    public function searchGlobalMessages(string $search_text, string $type): array|false
+    {
+        return Kernel::send('searchGlobalMessages', [
+            'search_text' => $search_text,
+            'type' => $type
+        ], $this->account);
+    }
+
+    /**
+     * send poll(just channel or group)
+     *
+     * @param string $guid user guid
+     * @param string $question poll question
+     * @param array $options
+     * like : array(
+     *    'option1',
+     *    'option2'
+     * );
+     * @param boolean $allows_multiple_answers
+     * @param boolean $is_anonymous
+     * @param integer $reply_to_message_id
+     * @return array|false
+     */
+    public function sendPoll(string $guid,  string $question, array $options, bool $allows_multiple_answers = false, bool $is_anonymous = true, int $reply_to_message_id = 0): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'question' => $question,
+            'options' => $options,
+            'allows_multiple_answers' => $allows_multiple_answers,
+            'is_anonymous' => $is_anonymous,
+            'type' => 'Regular'
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+
+        return Kernel::send('createPoll', $data, $this->account);
+    }
+
+    /**
+     * send quiz (just channel or group)
+     *
+     * @param string $guid user guid
+     * @param string $question poll question
+     * @param array $options
+     * like : array(
+     *    'option1',
+     *    'option2'
+     * );
+     * @param boolean $correct_option_index the correct index of options.
+     * notice: you must input an integer number that start from 0.
+     * for example if you enter 1, you selected the second option
+     * @param boolean $is_anonymous
+     * @param integer $reply_to_message_id
+     * @return array|false
+     */
+    public function sendQuiz(string $guid,  string $question, array $options, int $correct_option_index, bool $is_anonymous = true, int $reply_to_message_id = 0): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'question' => $question,
+            'options' => $options,
+            'correct_option_index' => $correct_option_index,
+            'type' => 'Quiz'
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+
+        return Kernel::send('createPoll', $data, $this->account);
+    }
+
+    /** 
+     * get status of poll
+     * 
+     * @param string $poll_id
+     * @return array|false
+     */
+    public function getPollStatus(string $poll_id): array|false
+    {
+        return Kernel::send('getPollStatus', ['poll_id' => $poll_id], $this->account);
+    }
+
+    /** 
+     * vote the poll or quiz
+     * 
+     * @param string $poll_id
+     * @param int $selection_index an integer number from 0
+     * @return array|false
+     */
+    public function vote(string $poll_id, int $selection_index): array|false
+    {
+        return Kernel::send('votePoll', ['poll_id' => $poll_id, 'selection_index' => $selection_index], $this->account);
     }
 
     /**
