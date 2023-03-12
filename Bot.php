@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rubika;
 
 use Exception;
+use fast;
 use Rubika\assets\login;
 use Rubika\Exception\{
     CodeIsExpired,
@@ -597,6 +598,85 @@ class Bot
             'type' => $type
         ], $this->account);
     }
+
+    /**
+     * send poll(just channel or group)
+     *
+     * @param string $guid user guid
+     * @param string $question poll question
+     * @param array $options
+     * like : array(
+     *    'option1',
+     *    'option2'
+     * );
+     * @param boolean $allows_multiple_answers
+     * @param boolean $is_anonymous
+     * @param integer $reply_to_message_id
+     * @return array|false
+     */
+    public function sendPoll(string $guid,  string $question, array $options, bool $allows_multiple_answers = false, bool $is_anonymous = true, int $reply_to_message_id = 0): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'question' => $question,
+            'options' => $options,
+            'allows_multiple_answers' => $allows_multiple_answers,
+            'is_anonymous' => $is_anonymous,
+            'type' => 'Regular'
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+
+        return Kernel::send('createPoll', $data, $this->account);
+    }
+
+    /**
+     * send quiz (just channel or group)
+     *
+     * @param string $guid user guid
+     * @param string $question poll question
+     * @param array $options
+     * like : array(
+     *    'option1',
+     *    'option2'
+     * );
+     * @param boolean $correct_option_index the correct index of options.
+     * notice: you must input an integer number that start from 0.
+     * for example if you enter 1, you selected the second option
+     * @param boolean $is_anonymous
+     * @param integer $reply_to_message_id
+     * @return array|false
+     */
+    public function sendQuiz(string $guid,  string $question, array $options, int $correct_option_index, bool $is_anonymous = true, int $reply_to_message_id = 0): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'question' => $question,
+            'options' => $options,
+            'correct_option_index' => $correct_option_index,
+            'type' => 'Quiz'
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+
+        return Kernel::send('createPoll', $data, $this->account);
+    }
+
+    /** 
+     * get status of poll
+     * 
+     * @param string $poll_id
+     * @return array|false
+     */
+    public function getPollStatus(string $poll_id): array|false
+    {
+        return Kernel::send('getPollStatus', ['poll_id' => $poll_id], $this->account);
+    }
+
 
     /**
      * Undocumented function
