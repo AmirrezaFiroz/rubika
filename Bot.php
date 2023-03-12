@@ -253,6 +253,15 @@ class Bot
     {
         return Kernel::send('getMySessions', [], $this->account);
     }
+    /** 
+     * terminate other account sessions
+     * 
+     * @return array|false
+     */
+    public function terminateOtherSessions(): array|false
+    {
+        return Kernel::send('terminateOtherSessions', [], $this->account);
+    }
 
     /**
      * logout account
@@ -677,6 +686,17 @@ class Bot
         return Kernel::send('getPollStatus', ['poll_id' => $poll_id], $this->account);
     }
 
+    /** 
+     * vote the poll or quiz
+     * 
+     * @param string $poll_id
+     * @param int $selection_index an integer number from 0
+     * @return array|false
+     */
+    public function vote(string $poll_id, int $selection_index): array|false
+    {
+        return Kernel::send('votePoll', ['poll_id' => $poll_id, 'selection_index' => $selection_index], $this->account);
+    }
 
     /**
      * Undocumented function
