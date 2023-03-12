@@ -486,18 +486,6 @@ class Bot
     }
 
     /**
-     * get chat list
-     *
-     * @return array|false
-     */
-    public function getChats(): array|false
-    {
-        return Kernel::send('setBlockUser', [
-            "start_id" => null
-        ], $this->account);
-    }
-
-    /**
      * mute chat notifocations
      *
      * @param string $guid chat id
@@ -523,6 +511,26 @@ class Bot
             "action" => "Unmute",
             "object_guid" => $guid
         ], $this->account);
+    }
+
+    /**
+     * get all chats, channels and groups
+     *
+     * @return array|false
+     */
+    public function getChats(): array|false
+    {
+        return Kernel::send('getChats', [], $this->account);
+    }
+
+    /**
+     * get new updates
+     *
+     * @return array|false
+     */
+    public function getChatsUpdates(): array|false
+    {
+        return Kernel::send('getChatsUpdates', ['state' => time()], $this->account);
     }
 
     /**
