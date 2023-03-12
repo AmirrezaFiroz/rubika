@@ -244,6 +244,26 @@ class Bot
     }
 
     /** 
+     * get account sessions
+     * 
+     * @return array|false
+     */
+    public function getMySessions(): array|false
+    {
+        return Kernel::send('getMySessions', [], $this->account);
+    }
+
+    /**
+     * logout account
+     *
+     * @return void
+     */
+    public function logout(): void
+    {
+        Kernel::send('logout', [], $this->account);
+    }
+
+    /** 
      * seen messages
      * 
      * @param array $seen_list list of message seened ['object_guid' => 'LAST MESSAGE ID FOR SEEN']
