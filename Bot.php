@@ -632,7 +632,7 @@ class Bot
         }
 
         $getID3 = new getID3;
-        $file = $getID3->analyze('/path/to/video.mp4');
+        $file = $getID3->analyze($filePath);
         $duration = $file['playtime_seconds'];
         $width = $file['video']['resolution_x'];
         $height = $file['video']['resolution_y'];
@@ -651,7 +651,8 @@ class Bot
                 'size' => $size,
                 'mime' => end($e),
                 'access_hash_rec' => $access_hash_rec,
-                'time' => $duration
+                'time' => $duration,
+                'thumb_inline' => basename($filePath)
             ]
         ];
         if ($reply_to_message_id != 0) {
@@ -661,7 +662,7 @@ class Bot
             $data['text'] = $caption . isset($no) ? $no : '';
         }
 
-        return Kernel::send('sendMessage', $data, $this->account, c: false);
+        return Kernel::send('sendMessage', $data, $this->account);
     }
 
     /**

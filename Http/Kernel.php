@@ -189,23 +189,17 @@ class Kernel
      * @param array $data
      * @return array|false  array if is it successful or false if its failed
      */
-    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false, bool $c = true): array|false
+    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false): array|false
     {
         $r = self::send_request($account, [
             'method' => $method,
             'input' => $data,
-            'client' => $c ? [
+            'client' => [
                 "app_name" => "Main",
                 "app_version" => "4.1.11",
                 "platform" => "Web",
                 "package" => "web.rubika.ir",
                 "lang_code" => "fa"
-            ] : [
-                "app_name"    => "Main",
-                "app_version" => "2.9.8",
-                "platform"    => "Android",
-                "package"     => "app.rbmain.a",
-                "lang_code"   => "fa"
             ]
         ], $setTmpSession);
         return isset($r['data']) ? $r['data'] : $r;
@@ -300,7 +294,6 @@ class Kernel
             return $r['data']['access_hash_rec'];
         } else {
             $total = (int)($size / (131072 + 1));
-            echo "total : $total\n";
             for ($i = 1; $i <= $total; $i++) {
                 $which_chunk_now = ($i - 1) * 131072;
                 $header["chunk-size"] = ($i != $total ? "131072" : (string)strlen(substr($content, $which_chunk_now)));
@@ -308,7 +301,6 @@ class Kernel
                 $header["total-part"] = (string)$total;
                 $data = ($i != $total ? substr($content, $which_chunk_now, $which_chunk_now + 131072) : substr($content, $which_chunk_now));
                 $c = curl_init($url);
-                echo "string part $i\n";
                 curl_setopt_array($c, [
                     CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
                     CURLOPT_SSL_VERIFYHOST => false,
@@ -322,7 +314,6 @@ class Kernel
                 ]);
                 $r = json_decode(curl_exec($c), true);
                 curl_close($c);
-                echo "end part $i : $r\n";
                 if ($i == $total) {
                     return $r['data']['access_hash_rec'];
                 }
