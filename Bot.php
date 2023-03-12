@@ -16,6 +16,7 @@ use Rubika\Exception\{
     fileTypeError,
     invalidAction,
     invalidCode,
+    invalidData,
     invalidOptions,
     invalidPassword,
     noIndexFileExists,
@@ -449,6 +450,75 @@ class Bot
             "object_guid" => $chat_id,
             "activity" => $action
         ], $this->account);
+    }
+
+    /**
+     * donwload a media from server
+     *
+     * @param string $guid chat guid
+     * @param integer $message_id
+     * @param boolean $saveFile save file or return datas
+     * @throws invalidData invalid message
+     * @return void
+     */
+    public function downloadMedia(string $guid, int $message_id): void
+    {
+        $mData = $this->getMessagesInfo($guid, $message_id)['data'];
+
+        if (!isset($mData['file_inline'])) {
+            throw new invalidData('invalid message');
+        }
+
+        $access_hash_rec = $mData['file_inline']['accessHashRec'];
+        $file_id = $mData['file_inline']['file_id'];
+        $file_name = $mData['file_inline']['file_name'];
+        $dc_id = $mData['file_inline']['dc_id'];
+        $size = $mData['file_inline']['size'];
+
+        $headers = [
+            'auth' => $this->account->auth,
+            'file-id' => $file_id,
+            'start-index' => '0',
+            'last-index' => (string)$size,
+            'access-hash-rec' => $access_hash_rec
+        ];
+
+        $urls = [];
+        $yaml = Yaml::parse(file_get_contents('.rubika_config/.servers.yaml'))['storage'];
+        foreach ($yaml as $number => $link) {
+            unset($yaml[$number]);
+            $yaml["$number."] = $link;
+        }
+        for ($i = 0; $i < count($yaml); $i++) {
+            $urls[] = $yaml[mt_rand(101, 153) . "."];
+        }
+
+        foreach ($urls as $url) {
+            if (Kernel::is_on($url)) {
+                $result = "";
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(function ($key) use ($headers) {
+                    return "$key: {$headers[$key]}";
+                }, array_keys($headers)),);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+                if ($size <= 131072) {
+                    $result .= curl_exec($ch);
+                } else {
+                    for ($i = 0; $i < $size; $i += 131072) {
+                        $header['start-index'] = (string)$i;
+                        $header['last-index:'] = (string)min($i + 131072, $size);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+                        $result .= curl_exec($ch);
+                    }
+                }
+                curl_close($ch);
+                file_put_contents($file_name, $result);
+            } else {
+                unset($urls[$url]);
+            }
+        }
     }
 
     /**
@@ -1030,6 +1100,21 @@ class Bot
         return Kernel::send('setActionChat', [
             "action" => "Unmute",
             "object_guid" => $guid
+        ], $this->account);
+    }
+
+    /**
+     * get message info
+     *
+     * @param string $guid chat guid
+     * @param int|array $message_id an id of message or array of message_id(s)
+     * @return array|false
+     */
+    public function getMessagesInfo(string $guid, int|array $message_id): array|false
+    {
+        return Kernel::send('getMessagesByID', [
+            "object_guid" => $guid,
+            "message_ids" => is_array($message_id) ? $message_id : [$message_id]
         ], $this->account);
     }
 
