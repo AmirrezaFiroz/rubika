@@ -533,6 +533,51 @@ class Bot
         return Kernel::send('getChatsUpdates', ['state' => time()], $this->account);
     }
 
+    /** 
+     * search text from a chat
+     * 
+     * @param string $object_guid grop or user or channel or ... id for search
+     * @param string $search_text text for search
+     * @param string $type:
+     * Hashtag, Text
+     * @return array|false
+     */
+    public function searchChatMessages(string $object_guid, string $search_text, string $type = 'Text'): array|false
+    {
+        return Kernel::send('searchChatMessages', [
+            'search_text' => $search_text,
+            'type' => $type,
+            'object_guid' => $object_guid
+        ], $this->account);
+    }
+
+    /** 
+     * global seach to find a special user, channel or group
+     *  
+     * @param string $search_text text for search
+     * @return array|false
+     */
+    public function searchGlobalObjects(string $search_text): array|false
+    {
+        return Kernel::send('searchGlobalObjects', ['search_text' => $search_text], $this->account);
+    }
+
+    /** 
+     * global(in account) search for messages
+     * 
+     * @param string $search_text text for search
+     * @param string $type:
+     * Hashtag, Text
+     * @return array|false
+     */
+    public function searchGlobalMessages(string $search_text, string $type): array|false
+    {
+        return Kernel::send('searchGlobalMessages', [
+            'search_text' => $search_text,
+            'type' => $type
+        ], $this->account);
+    }
+
     /**
      * Undocumented function
      *
