@@ -107,8 +107,8 @@ trait Texts
     {
         $metadata = array();
         $bold_pattern = '/\*\*(.+?)\*\*/';
-        $mono_pattern = '/\`(.+?)\`/';
-        $italic_pattern = '/\_\_(.+?)\_\_/';
+        // $mono_pattern = '/\`(.+?)\`/';
+        // $italic_pattern = '/\_\_(.+?)\_\_/';
         if (preg_match_all($bold_pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
             foreach ($matches[0] as $match) {
                 $metadata[] = array(
@@ -118,15 +118,15 @@ trait Texts
                 );
             }
         }
-        if (preg_match_all($italic_pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
-            foreach ($matches[0] as $match) {
-                $metadata[] = array(
-                    'type' => 'italic',
-                    'index' => $match[1],
-                    'length' => strlen($match[0])
-                );
-            }
-        }
+        // if (preg_match_all($italic_pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
+        //     foreach ($matches[0] as $match) {
+        //         $metadata[] = array(
+        //             'type' => 'italic',
+        //             'index' => $match[1],
+        //             'length' => strlen($match[0])
+        //         );
+        //     }
+        // }
         return $metadata;
     }
 }
