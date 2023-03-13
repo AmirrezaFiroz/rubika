@@ -154,6 +154,11 @@ class Account extends Traits
      * change account username
      *
      * @param string $newUsername
+     * @throws UsernameExist this username is already exists
+     * @throws ERROR_GENERIC invalid username input : 
+     * 1. must start with characters
+     * 2. characters count must between 5-32
+     * 3. allowed chars: english characters(a-z , A-Z) and (_)
      * @return array|false
      */
     public function changeUsername(string $newUsername): array|false

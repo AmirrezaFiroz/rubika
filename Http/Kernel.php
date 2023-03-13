@@ -27,6 +27,7 @@ class Kernel
      * send GET request
      *
      * @param string $url
+     * @throws internetConnectionError not connected to internet
      * @return string
      */
     public static function Get(string $url): string
@@ -34,7 +35,7 @@ class Kernel
         if (Status::connection()) {
             return file_get_contents($url);
         } else {
-            throw new internetConnectionError();
+            throw new internetConnectionError('not connected to internet');
         }
     }
 
@@ -43,6 +44,7 @@ class Kernel
      *
      * @param string $url
      * @param array $data data in array type
+     * @throws internetConnectionError not connected to internet
      * @return string
      */
     public static function Post(string $url, array $data): string
@@ -67,7 +69,7 @@ class Kernel
             curl_close($curl);
             return $result;
         } else {
-            throw new internetConnectionError();
+            throw new internetConnectionError('not connected to internet');
         }
     }
 
@@ -75,6 +77,7 @@ class Kernel
      * testing is url available
      *
      * @param string $url
+     * @throws internetConnectionError not connected to internet
      * @return boolean true for available and false if isn't available
      */
     public static function is_on(string $url): bool
@@ -98,7 +101,7 @@ class Kernel
                     'Access-Control-Request-Headers: content-type',
                     'Referer: https://web.rubika.ir/',
                     'Origin: https://web.rubika.ir',
-                    'Connection: keep-alive',
+                    'Connection: keep-alive'
                 ],
             ]);
             curl_exec($c);
@@ -106,7 +109,7 @@ class Kernel
             curl_close($c);
             return $httpCode == 200 ? true : false;
         } else {
-            throw new internetConnectionError();
+            throw new internetConnectionError('not connected to internet');
         }
     }
 
@@ -116,6 +119,8 @@ class Kernel
      * @param string|Account $auth account auth or account info(in Account type)
      * @param array|object $datas request data
      * @param boolean $setTmpSession true for replace 'tmp_session' instead of 'auth' in request
+     * @throws internetConnectionError not connected to internet
+     * @throws APIError server not returned a response
      * @return array|false array if is it successful or false if its failed
      */
     public static function send_request(Account $account, array|object $datas, bool $setTmpSession = false): array|false
@@ -173,7 +178,7 @@ class Kernel
             }
             return $sended;
         } else {
-            throw new internetConnectionError();
+            throw new internetConnectionError('not connected to internet');
         }
     }
 
@@ -225,5 +230,94 @@ class Kernel
             }
         }
         return $links;
+    }
+
+    /**
+     * request server for uploading a file
+     *
+     * @param string $file_namename of file
+     * @param integer $size size of file
+     * @return array|false array if is it successful or false if its failed
+     */
+    public static function requestSendFile(string $file_name, Account $acc, int $size): array|false
+    {
+        $e = explode(".", $file_name);
+        return self::send('requestSendFile', [
+            "file_name" => $file_name,
+            "size" => $size,
+            "mime" => end($e)
+        ], $acc);
+    }
+
+    /**
+     * upload file to server
+     *
+     * @param string $url upload url
+     * @param integer $size file size (in byte)
+     * @param string $access_hash_send
+     * @param string $fid file id
+     * @param string $content file content
+     * @param Account $Acc account datas for getting auth of account
+     * @throws APIError connection error
+     * @return string returns access_hash_rec of file
+     */
+    public static function uploadFile(string $url, int $size, string $access_hash_send, string $fid, string $content, Account $Acc): string
+    {
+        if (!self::is_on($url)) {
+            throw new APIError('server not responsed');
+        }
+        $size = (string)$size;
+        $headers = [
+            'access-hash-send' => $access_hash_send,
+            'auth' => $Acc->auth,
+            'chunk-size' => $size,
+            'file-id' => $fid,
+            'part-number' => '1',
+            'total-part' => '1'
+        ];
+        $size = (int)$size;
+        if ($size <= 131072) {
+            $c = curl_init($url);
+            curl_setopt_array($c, [
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => array_map(function ($key) use ($headers) {
+                    return "$key: {$headers[$key]}";
+                }, array_keys($headers)),
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $content
+            ]);
+            $r = json_decode(curl_exec($c), true);
+            curl_close($c);
+            return $r['data']['access_hash_rec'];
+        } else {
+            $total = (int)($size / (131072 + 1));
+            for ($i = 1; $i <= $total; $i++) {
+                $which_chunk_now = ($i - 1) * 131072;
+                $header["chunk-size"] = ($i != $total ? "131072" : (string)strlen(substr($content, $which_chunk_now)));
+                $header["part-number"] = (string)$i;
+                $header["total-part"] = (string)$total;
+                $data = ($i != $total ? substr($content, $which_chunk_now, $which_chunk_now + 131072) : substr($content, $which_chunk_now));
+                $c = curl_init($url);
+                curl_setopt_array($c, [
+                    CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+                    CURLOPT_SSL_VERIFYHOST => false,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => array_map(function ($key) use ($headers) {
+                        return "$key: {$headers[$key]}";
+                    }, array_keys($headers)),
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $data
+                ]);
+                $r = json_decode(curl_exec($c), true);
+                curl_close($c);
+                if ($i == $total) {
+                    return $r['data']['access_hash_rec'];
+                }
+            }
+        }
     }
 }

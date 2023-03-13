@@ -39,7 +39,8 @@
     "require": {
         "symfony/yaml": "^6.2",
         "textalk/websocket": "^1.6",
-        "php": ">=8"
+        "php": ">=8",
+        "james-heinrich/getid3": "^1.9"
     },
     "homepage": "https://rubika-library.github.io"
 }
