@@ -463,62 +463,60 @@ class Bot
      */
     public function downloadMedia(string $guid, int $message_id): void
     {
-        $mData = $this->getMessagesInfo($guid, $message_id)['data'];
+        $mData = $this->getMessagesInfo($guid, $message_id)[0];
 
         if (!isset($mData['file_inline'])) {
             throw new invalidData('invalid message');
+        } else {
+            $mData = $mData['file_inline'];
         }
 
-        $access_hash_rec = $mData['file_inline']['accessHashRec'];
-        $file_id = $mData['file_inline']['file_id'];
-        $file_name = $mData['file_inline']['file_name'];
-        $dc_id = $mData['file_inline']['dc_id'];
-        $size = $mData['file_inline']['size'];
+        $access_hash_rec = $mData['access_hash_rec'];
+        $file_id = $mData['file_id'];
+        $file_name = $mData['file_name'];
+        $dc_id = $mData['dc_id'];
+        $size = $mData['size'];
 
         $headers = [
+            'access-hash-rec' => $access_hash_rec,
             'auth' => $this->account->auth,
-            'file-id' => $file_id,
-            'start-index' => '0',
-            'last-index' => (string)$size,
-            'access-hash-rec' => $access_hash_rec
+            'file-id' => (string)$file_id,
+            'last-index' => (string)(131072),
+            'start-index' => '0'
         ];
 
-        $urls = [];
-        $yaml = Yaml::parse(file_get_contents('.rubika_config/.servers.yaml'))['storage'];
-        foreach ($yaml as $number => $link) {
-            unset($yaml[$number]);
-            $yaml["$number."] = $link;
-        }
-        for ($i = 0; $i < count($yaml); $i++) {
-            $urls[] = $yaml[mt_rand(101, 153) . "."];
-        }
+        $result = "";
+        if ($size <= 131072) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "https://messenger$dc_id.iranlms.ir/GetFile.ashx");
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(function ($key) use ($headers) {
+                return "$key: {$headers[$key]}";
+            }, array_keys($headers)));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-        foreach ($urls as $url) {
-            if (Kernel::is_on($url)) {
-                $result = "";
+            $result .= curl_exec($ch);
+            curl_close($ch);
+        } else {
+            for ($i = 0; $i < $size; $i += 131072) {
                 $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_URL, "https://messenger$dc_id.iranlms.ir/GetFile.ashx");
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+                $headers['start-index'] = (string)$i;
+                $headers['last-index:'] = (string)min($i + 131072, $size);
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(function ($key) use ($headers) {
                     return "$key: {$headers[$key]}";
-                }, array_keys($headers)),);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                }, array_keys($headers)));
 
-                if ($size <= 131072) {
-                    $result .= curl_exec($ch);
-                } else {
-                    for ($i = 0; $i < $size; $i += 131072) {
-                        $header['start-index'] = (string)$i;
-                        $header['last-index:'] = (string)min($i + 131072, $size);
-                        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-                        $result .= curl_exec($ch);
-                    }
-                }
+                $result .= curl_exec($ch);
                 curl_close($ch);
-                file_put_contents($file_name, $result);
-            } else {
-                unset($urls[$url]);
             }
         }
+        file_put_contents($file_name, $result);
     }
 
     /**
@@ -1115,7 +1113,7 @@ class Bot
         return Kernel::send('getMessagesByID', [
             "object_guid" => $guid,
             "message_ids" => is_array($message_id) ? $message_id : [$message_id]
-        ], $this->account);
+        ], $this->account)['messages'];
     }
 
     /**
