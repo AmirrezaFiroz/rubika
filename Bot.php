@@ -12,7 +12,11 @@ use Rubika\Exception\{
     CodeIsInvalid,
     InvalidPhoneNumber,
     ERROR_GENERIC,
+    fileNotFound,
+    fileTypeError,
+    invalidAction,
     invalidCode,
+    invalidData,
     invalidOptions,
     invalidPassword,
     noIndexFileExists,
@@ -24,18 +28,23 @@ use Rubika\Http\Kernel;
 use Rubika\Tools\{
     Color,
     Crypto,
+    File,
     Printing,
     System
 };
-use Rubika\Types\Account;
-use WebSocket\Client as websocket;
+use Rubika\Types\{
+    Account,
+    Actions
+};
 use Symfony\Component\Yaml\Yaml;
+use getID3;
 
 class Bot
 {
     public ?Account $account;
 
     private string $ph_name;
+    public bool $autoSendAction = false;
 
     /**
      * initialize client
@@ -74,7 +83,7 @@ class Bot
                 ?>
                 <?php
                 if (!$ex) {
-                    $result = $this->sendSMS($phone, $acc);
+                    $result = $this->sendSMS($phone);
                     if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
                         if ($result['has_confirmed_recovery_email']) {
                             new login('two-step', $result['hint_pass_key']);
@@ -90,7 +99,7 @@ class Bot
                     }
                 } elseif ($ex && $_POST == []) {
                     if (empty($acc->user->user_guid)) {
-                        $result = $this->sendSMS($phone, $acc);
+                        $result = $this->sendSMS($phone);
                         if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
                             if ($result['has_confirmed_recovery_email']) {
                                 new login('two-step', $result['hint_pass_key']);
@@ -113,7 +122,7 @@ class Bot
                     }
                 } elseif ($ex && isset($_POST['password']) && $_POST['password'] != '') {
                     if (!SET_UP && empty($acc->user->user_guid)) {
-                        $result = $this->sendSMS($phone, $acc, $_POST['password']);
+                        $result = $this->sendSMS($phone, $_POST['password']);
                         if ($result['status'] == 'InvalidPassKey') {
                             throw new invalidPassword('two-step verifition password is not correct');
                         } else {
@@ -132,7 +141,7 @@ class Bot
                         if (empty($code)) {
                             throw new invalidCode('code is not valid');
                         }
-                        $result = $this->signIn($phone, $acc, $hash, (int)$code);
+                        $result = $this->signIn($phone, $hash, (int)$code);
                         if ($result['status'] == 'CodeIsInvalid') {
                             throw new CodeIsInvalid('login code is not true');
                         } elseif ($result['status'] == 'CodeIsExpired') {
@@ -167,7 +176,7 @@ class Bot
                 }
                 $this->account = $acc;
                 if (empty($acc->user->user_guid)) {
-                    $result = $this->sendSMS($phone, $acc);
+                    $result = $this->sendSMS($phone);
                     if (isset($result['status']) && ($result['status'] == 'SendPassKey' or strtolower($result['status']) == "ok")) {
                         if ($result['has_confirmed_recovery_email']) {
                             do {
@@ -179,7 +188,7 @@ class Bot
                                 }
                                 $pass = readline();
                             } while (empty($pass));
-                            $result = $this->sendSMS($phone, $acc, $pass);
+                            $result = $this->sendSMS($phone, $pass);
                             if ($result['status'] == 'InvalidPassKey') {
                                 throw new invalidPassword(Color::color(' two-step verifition password is not correct ', 'red'));
                             }
@@ -209,7 +218,7 @@ class Bot
                         if (empty($code)) {
                             throw new invalidCode(Color::color(' code is not valid ', background: 'red'));
                         }
-                        $result = $this->signIn($phone, $acc, $hash, (int)$code);
+                        $result = $this->signIn($phone, $hash, (int)$code);
                         if ($result['status'] == 'CodeIsInvalid') {
                             throw new CodeIsInvalid(Color::color(' login code is not true', 'red'));
                         } elseif ($result['status'] == 'CodeIsExpired') {
@@ -301,7 +310,7 @@ class Bot
     }
 
     /**
-     * send message to user
+     * send message to user or channel or group
      *
      * @param string $guid user guid
      * @param string $text message
@@ -314,8 +323,8 @@ class Bot
      */
     public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options = []): array|false
     {
-        $no = "\n\n";
         if ($options != []) {
+            $no = "\n\n";
             $index = mb_str_split($options['index']);
             unset($options['index']);
             if (count($index) >= 1 && count($index) <= 3) {
@@ -336,7 +345,7 @@ class Bot
         }
         return Kernel::send('sendMessage', $data, $this->account);
     }
-    
+
     /**
      * edit message in chat
      *
@@ -349,7 +358,7 @@ class Bot
      * @throws invalidOptions message options is invalid
      * @return array|false
      */
-    public function editMessage(string $guid, int $message_id,  string $text, array $options): array|false
+    public function editMessage(string $guid, int $message_id,  string $text, array $options = []): array|false
     {
         $no = "\n\n";
         $index = mb_str_split($options['index']);
@@ -418,6 +427,539 @@ class Bot
             $data['message_ids'] = $message_id;
         }
         return Kernel::send('deleteMessages', $data, $this->account);
+    }
+
+    /**
+     * send chating actions
+     *
+     * @param string $chat_id user guid
+     * @param Actions $action action:
+     * 
+     * typing, uploading, recording
+     * @throws invalidAction invalid action
+     * @return void
+     */
+    public function sendChatAction(string $chat_id, Actions $action): array|false
+    {
+        if ($action->value() == '') {
+            throw new invalidAction('action not exists');
+        } else {
+            $action = $action->value();
+        }
+        return Kernel::send('sendChatActivity', [
+            "object_guid" => $chat_id,
+            "activity" => $action
+        ], $this->account);
+    }
+
+    /**
+     * donwload a media from server
+     *
+     * @param string $guid chat guid
+     * @param integer $message_id
+     * @param boolean $saveFile save file or return datas
+     * @throws invalidData invalid message
+     * @return void
+     */
+    public function downloadMedia(string $guid, int $message_id): void
+    {
+        $mData = $this->getMessagesInfo($guid, $message_id)[0];
+
+        if (!isset($mData['file_inline'])) {
+            throw new invalidData('invalid message');
+        } else {
+            $mData = $mData['file_inline'];
+        }
+
+        $access_hash_rec = $mData['access_hash_rec'];
+        $file_id = $mData['file_id'];
+        $file_name = $mData['file_name'];
+        $dc_id = $mData['dc_id'];
+        $size = $mData['size'];
+
+        $headers = [
+            'access-hash-rec' => $access_hash_rec,
+            'auth' => $this->account->auth,
+            'file-id' => (string)$file_id,
+            'last-index' => (string)(131072),
+            'start-index' => '0'
+        ];
+
+        $result = "";
+        if ($size <= 131072) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "https://messenger$dc_id.iranlms.ir/GetFile.ashx");
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(function ($key) use ($headers) {
+                return "$key: {$headers[$key]}";
+            }, array_keys($headers)));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+            $result .= curl_exec($ch);
+            curl_close($ch);
+        } else {
+            for ($i = 0; $i < $size; $i += 131072) {
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, "https://messenger$dc_id.iranlms.ir/GetFile.ashx");
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+                $headers['start-index'] = (string)$i;
+                $headers['last-index:'] = (string)min($i + 131072, $size);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(function ($key) use ($headers) {
+                    return "$key: {$headers[$key]}";
+                }, array_keys($headers)));
+
+                $result .= curl_exec($ch);
+                curl_close($ch);
+            }
+        }
+        file_put_contents($file_name, $result);
+    }
+
+    /**
+     * send a file to a user or group or channel
+     *
+     * @param string $guid user guid
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @throws fileNotFound file not exists
+     * @return array|false
+     */
+    public function sendFile(string $guid, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+
+        $contents = fopen($filePath, 'rb');
+        $content = fread($contents, filesize($filePath));
+        fclose($contents);
+        $size = strlen($content);
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
+
+        if (isset($response['status']) && $response['status'] != 'OK') {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('uploading'));
+        }
+
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+        $e = explode(".", basename($filePath));
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "File",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'access_hash_rec' => $access_hash_rec
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if ($caption != '') {
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    /**
+     * send photo to user ot group or channel
+     *
+     * @param string $guid
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @throws fileNotFound file not exists
+     * @throws fileTypeError invalid file
+     * @return array|false
+     */
+    public function sendPhoto(string $guid, string $filePath, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+        $e = explode(".", basename($filePath));
+        if (!in_array(end($e), ['png', 'jpg', 'jpeg'])) {
+            throw new fileTypeError('invalid file');
+        }
+
+        list($width, $height) = getimagesize($filePath);
+        $contents = fopen($filePath, 'rb');
+        $content = fread($contents, filesize($filePath));
+        fclose($contents);
+        $size = strlen($content);
+
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
+
+        if (isset($response['status']) && $response['status'] != 'OK') {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('uploading'));
+        }
+
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "Image",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'thumb_inline' => File::getThumbInline($content),
+                'width' => $width,
+                'height' => $height,
+                'access_hash_rec' => $access_hash_rec
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if ($caption != '') {
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    /**
+     * send video to user ot group or channel
+     *
+     * @param string $guid
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @throws fileNotFound file not exists
+     * @throws fileTypeError invalid file
+     * @return array|false
+     */
+    public function sendVideo(string $guid, string $filePath, bool $auto_play = false, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+        $e = explode(".", basename($filePath));
+        if (end($e) != 'mp4') {
+            throw new fileTypeError('invalid file');
+        }
+
+        $contents = fopen($filePath, 'rb');
+        $content = fread($contents, filesize($filePath));
+        fclose($contents);
+        $size = strlen($content);
+
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
+
+        if (isset($response['status']) && $response['status'] != 'OK') {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('uploading'));
+        }
+
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+
+        $getID3 = new getID3;
+        $file = $getID3->analyze($filePath);
+        $duration = $file['playtime_seconds'];
+        $width = $file['video']['resolution_x'];
+        $height = $file['video']['resolution_y'];
+
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'auto_play' => $auto_play,
+                'height' => $height,
+                'width' => $width,
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "Video",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'access_hash_rec' => $access_hash_rec,
+                'time' => $duration,
+                'thumb_inline' => basename($filePath)
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if ($caption != '') {
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    /**
+     * send gif to user ot group or channel
+     *
+     * @param string $guid
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @throws fileNotFound file not exists
+     * @throws fileTypeError invalid file
+     * @return array|false
+     */
+    public function sendGif(string $guid, string $filePath, bool $auto_play = false, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+        $e = explode(".", basename($filePath));
+        if (!in_array(end($e), ['mp4', 'gif'])) {
+            throw new fileTypeError('invalid file');
+        }
+
+        $contents = fopen($filePath, 'rb');
+        $content = fread($contents, filesize($filePath));
+        fclose($contents);
+        $size = strlen($content);
+
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
+
+        if (isset($response['status']) && $response['status'] != 'OK') {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('uploading'));
+        }
+
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+
+        $getID3 = new getID3;
+        $file = $getID3->analyze($filePath);
+        $duration = $file['playtime_seconds'];
+        $width = $file['video']['resolution_x'];
+        $height = $file['video']['resolution_y'];
+
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'auto_play' => $auto_play,
+                'height' => $height,
+                'width' => $width,
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "Gif",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'access_hash_rec' => $access_hash_rec,
+                'time' => $duration
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if ($caption != '') {
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    /**
+     * send voice to user ot group or channel
+     *
+     * @param string $guid
+     * @param string $filePath file path(if in corrent directory, jsut path file name)
+     * @param integer $reply_to_message_id
+     * @param string $caption
+     * @param array $options
+     * @throws fileNotFound file not exists
+     * @throws fileTypeError invalid file
+     * @return array|false
+     */
+    public function sendVoice(string $guid, string $filePath, bool $auto_play = false, int $reply_to_message_id = 0, string $caption = "", array $options = []): array|false
+    {
+        if (!is_file($filePath)) {
+            throw new fileNotFound('file not exists');
+        }
+        $e = explode(".", basename($filePath));
+        if (end($e) != 'ogg') {
+            throw new fileTypeError('invalid file');
+        }
+
+        $contents = fopen($filePath, 'rb');
+        $content = fread($contents, filesize($filePath));
+        fclose($contents);
+        $size = strlen($content);
+
+        $response = Kernel::requestSendFile(basename($filePath), $this->account, $size);
+
+        if (isset($response['status']) && $response['status'] != 'OK') {
+            throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+        }
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('uploading'));
+        }
+
+        $id = $response['id'];
+        $dc_id = $response['dc_id'];
+        $access_hash_send = $response['access_hash_send'];
+        $upload_url = $response['upload_url'];
+
+        $access_hash_rec = Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+
+        if ($options != []) {
+            $no = "\n\n";
+            $index = mb_str_split($options['index']);
+            unset($options['index']);
+            if (count($index) >= 1 && count($index) <= 3) {
+                foreach ($options as $nu => $opt) {
+                    $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
+                }
+            } else {
+                throw new invalidOptions("your options's arrange is invalid");
+            }
+        }
+
+        $getID3 = new getID3;
+        $file = $getID3->analyze($filePath);
+        $duration = $file['playtime_seconds'];
+
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'file_inline' => [
+                'dc_id' => $dc_id,
+                'file_id' => $id,
+                'type' => "Voice",
+                'file_name' => basename($filePath),
+                'size' => $size,
+                'mime' => end($e),
+                'access_hash_rec' => $access_hash_rec,
+                'time' => $duration
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+        if ($caption != '') {
+            $data['text'] = $caption . isset($no) ? $no : '';
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
+    }
+
+    /**
+     * send location to user, group or channel
+     *
+     * @param string $guid
+     * @param float $latitude
+     * @param float $longitude
+     * @param integer $reply_to_message_id
+     * @return array|false
+     */
+    public function sendLocation(string $guid, float $latitude, float $longitude, int $reply_to_message_id = 0): array|false
+    {
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'location' => [
+                'latitude' => $latitude,
+                'longitude' => $longitude
+            ]
+        ];
+        if ($reply_to_message_id != 0) {
+            $data['reply_to_message_id'] = $reply_to_message_id;
+        }
+
+        return Kernel::send('sendMessage', $data, $this->account);
     }
 
     /**
@@ -557,6 +1099,21 @@ class Bot
             "action" => "Unmute",
             "object_guid" => $guid
         ], $this->account);
+    }
+
+    /**
+     * get message info
+     *
+     * @param string $guid chat guid
+     * @param int|array $message_id an id of message or array of message_id(s)
+     * @return array|false
+     */
+    public function getMessagesInfo(string $guid, int|array $message_id): array|false
+    {
+        return Kernel::send('getMessagesByID', [
+            "object_guid" => $guid,
+            "message_ids" => is_array($message_id) ? $message_id : [$message_id]
+        ], $this->account)['messages'];
     }
 
     /**
@@ -772,25 +1329,13 @@ class Bot
     }
 
     /**
-     * set new config to /.rubika_config/.[PHONE_HASH].base64 file
-     *
-     * @param array $data
-     * @return void
-     */
-    private function set_configs(array $data): void
-    {
-        file_put_contents(".rubika_config/." . $this->ph_name . ".base64", base64_encode(serialize($data)));
-    }
-
-    /**
      * send login SMS to phone number
      *
      * @param integer $phone
-     * @param Account $acc account object
      * @param string $password two-step verifition password
      * @return array|false array if is it successful or false if its failed
      */
-    private function sendSMS(int $phone, Account $acc, string $password = ''): array|false
+    private function sendSMS(int $phone, string $password = ''): array|false
     {
         $i = [
             'phone_number' => '98' . (string)$phone,
@@ -799,24 +1344,36 @@ class Bot
         if (!empty($password)) {
             $i['pass_key'] = $password;
         }
-        return Kernel::send('sendCode', $i, $acc, true);
+        return Kernel::send('sendCode', $i, $this->account, true);
     }
 
     /**
      * signing to account
      *
      * @param integer $phone
-     * @param Account $acc account object
      * @param string $hash phone_code_hash
      * @param integer $code phone_code
      * @return array|false array if is it successful or false if its failed
      */
-    private function signIn(int $phone, Account $acc, string $hash, int $code): array|false
+    private function signIn(int $phone, string $hash, int $code): array|false
     {
         return Kernel::send('signIn', [
             "phone_number" => '98' . (string)$phone,
             "phone_code_hash" => $hash,
             "phone_code" => $code
-        ], $acc, true);
+        ], $this->account, true);
     }
+
+    // if (function_exists('curl_file_create')) { // php 5.5+
+    //     $cFile = curl_file_create($file_name_with_full_path);
+    //   } else { // 
+    //     $cFile = '@' . realpath($file_name_with_full_path);
+    //   }
+    //   $post = array('extra_info' => '123456','file_contents'=> $cFile);
+    //   $ch = curl_init();
+    //   curl_setopt($ch, CURLOPT_URL,$target_url);
+    //   curl_setopt($ch, CURLOPT_POST,1);
+    //   curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+    //   $result=curl_exec ($ch);
+    //   curl_close ($ch);
 }
