@@ -103,30 +103,36 @@ trait Texts
      * @param string $text text with metadatas
      * @return array array of metadatas
      */
-    function extract_markdown_metadata(string $text): array
+    public static function extract_markdown_metadata(string $text): array
     {
+        $markdown_tags = [
+            "**" => "Bold",
+            "__" => "Italic",
+            "`" => "Mono"
+        ];
         $metadata = array();
-        $bold_pattern = '/\*\*(.+?)\*\*/';
-        // $mono_pattern = '/\`(.+?)\`/';
-        // $italic_pattern = '/\_\_(.+?)\_\_/';
-        if (preg_match_all($bold_pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
-            foreach ($matches[0] as $match) {
+        $tag_length_sum = 0;
+
+        foreach ($markdown_tags as $tag => $type) {
+            $start_pos = 0;
+            while (($start_pos = mb_strpos($text, $tag, $start_pos)) !== false) {
+                $end_pos = mb_strpos($text, $tag, $start_pos + mb_strlen($tag));
+
+                if ($end_pos === false) {
+                    break;
+                }
+
                 $metadata[] = array(
-                    'type' => 'bold',
-                    'index' => $match[1],
-                    'length' => strlen($match[0])
+                    "from_index" => ($start_pos - $tag_length_sum),
+                    "type" => $type,
+                    "length" => ($end_pos - ($start_pos + mb_strlen($tag))),
+                    "content" => mb_substr($text, ($start_pos + mb_strlen($tag)), ($end_pos - ($start_pos + mb_strlen($tag))) - (2 * mb_strlen($tag)))
                 );
+
+                $start_pos = $end_pos + mb_strlen($tag);
+                $tag_length_sum += 2 * mb_strlen($tag);
             }
         }
-        // if (preg_match_all($italic_pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
-        //     foreach ($matches[0] as $match) {
-        //         $metadata[] = array(
-        //             'type' => 'italic',
-        //             'index' => $match[1],
-        //             'length' => strlen($match[0])
-        //         );
-        //     }
-        // }
         return $metadata;
     }
 }
