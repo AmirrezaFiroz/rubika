@@ -96,43 +96,4 @@ trait Texts
         Printing::fast(Color::color(" starting >_ (98-" . substr_replace((string)$phone, '-****', 3, 4) . ")...", background: 'green') . "\n");
         sleep(1);
     }
-
-    /**
-     * get markDown metadatas from text
-     *
-     * @param string $text text with metadatas
-     * @return array array of metadatas
-     */
-    public static function extract_markdown_metadata(string $text): array
-    {
-        $markdown_tags = [
-            "**" => "Bold",
-            "__" => "Italic",
-            "`" => "Mono"
-        ];
-        $metadata = array();
-        $tag_length_sum = 0;
-
-        foreach ($markdown_tags as $tag => $type) {
-            $start_pos = 0;
-            while (($start_pos = mb_strpos($text, $tag, $start_pos)) !== false) {
-                $end_pos = mb_strpos($text, $tag, $start_pos + mb_strlen($tag));
-
-                if ($end_pos === false) {
-                    break;
-                }
-
-                $metadata[] = array(
-                    "from_index" => ($start_pos - $tag_length_sum),
-                    "type" => $type,
-                    "length" => ($end_pos - ($start_pos + mb_strlen($tag))),
-                    "content" => mb_substr($text, ($start_pos + mb_strlen($tag)), ($end_pos - ($start_pos + mb_strlen($tag))) - (2 * mb_strlen($tag)))
-                );
-
-                $start_pos = $end_pos + mb_strlen($tag);
-                $tag_length_sum += 2 * mb_strlen($tag);
-            }
-        }
-        return $metadata;
-    }
 }

@@ -326,10 +326,7 @@ class Bot
         $data = [
             'object_guid' => $guid,
             'rnd' => (string)mt_rand(100000, 999999),
-            'text' => str_replace(['**'], '', $text),
-            'metadata' => [
-                'meta_data_parts' => Traits::extract_markdown_metadata($text)
-            ]
+            'text' => str_replace(['**'], '', $text)
         ];
         if ($options != []) {
             $no = "\n\n";
