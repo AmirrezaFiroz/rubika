@@ -323,6 +323,11 @@ class Bot
      */
     public function sendMessage(string $guid, string $text, int $reply_to_message_id = 0, array $options = []): array|false
     {
+        $data = [
+            'object_guid' => $guid,
+            'rnd' => (string)mt_rand(100000, 999999),
+            'text' => str_replace(['**'], '', $text)
+        ];
         if ($options != []) {
             $no = "\n\n";
             $index = mb_str_split($options['index']);
@@ -334,12 +339,9 @@ class Bot
             } else {
                 throw new invalidOptions("your options's arrange is invalid");
             }
+            $data['text'] = $data['text'] . $no;
         }
-        $data = [
-            'object_guid' => $guid,
-            'rnd' => (string)mt_rand(100000, 999999),
-            'text' => $text . $no
-        ];
+
         if ($reply_to_message_id != 0) {
             $data['reply_to_message_id'] = $reply_to_message_id;
         }

@@ -44,12 +44,12 @@ trait functions
      * @param string ...$chars
      * @return string
      */
-    public static function rand_str_chars(int $length, string ...$chars) : string
+    public static function rand_str_chars(int $length, string ...$chars): string
     {
         $str = '';
-        for ($i=0; $i < $length; $i++) { 
-            $t = mt_rand(0, count($chars) -1);
-            $str .= str_split($chars[$t])[mt_rand(0, strlen($chars[$t]) -1)];
+        for ($i = 0; $i < $length; $i++) {
+            $t = mt_rand(0, count($chars) - 1);
+            $str .= str_split($chars[$t])[mt_rand(0, strlen($chars[$t]) - 1)];
         }
         return $str;
     }
@@ -82,7 +82,7 @@ trait Texts
     public static function welcome(): void
     {
         System::clear();
-        echo Color::color(" rubika PHP client started ... \n     ||\n     || ", 'light_purple') . Color::color(Configs::get_github(), 'light_red') . Color::color("\n     ||\n     \_ ", 'light_purple') .Color::color(Configs::get_telegram(), 'light_red') . "\n";
+        echo Color::color(" rubika PHP client started ... \n     ||\n     || ", 'light_purple') . Color::color(Configs::get_github(), 'light_red') . Color::color("\n     ||\n     \_ ", 'light_purple') . Color::color(Configs::get_telegram(), 'light_red') . "\n";
     }
 
     /**
