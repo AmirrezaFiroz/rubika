@@ -345,7 +345,6 @@ class Bot
         if ($reply_to_message_id != 0) {
             $data['reply_to_message_id'] = $reply_to_message_id;
         }
-        var_dump($data); // rm
         return Kernel::send('sendMessage', $data, $this->account);
     }
 
