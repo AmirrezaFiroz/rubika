@@ -391,6 +391,11 @@ class Bot
         if ($reply_to_message_id != 0) {
             $data['reply_to_message_id'] = $reply_to_message_id;
         }
+
+        if ($this->autoSendAction) {
+            $this->sendChatAction($guid, new Actions('typing'));
+        }
+
         return Kernel::send('sendMessage', $data, $this->account);
     }
 
@@ -408,11 +413,15 @@ class Bot
      */
     public function editMessage(string $guid, int $message_id,  string $text, array $options = []): array|false
     {
-        $no = "\n\n";
-        $index = mb_str_split($options['index']);
-        unset($options['index']);
+        $data = [
+            'object_guid' => $guid,
+            'message_id' => $message_id,
+            'text' => $text
+        ];
         if ($options != []) {
+            $no = "\n\n";
             $index = mb_str_split($options['index']);
+            unset($options['index']);
             if (count($index) >= 1 && count($index) <= 3) {
                 foreach ($options as $nu => $opt) {
                     $no .= "{$index[0]} $nu {$index[1]} {$index[2]} $opt";
@@ -420,12 +429,8 @@ class Bot
             } else {
                 throw new invalidOptions("your options's arrange is invalid");
             }
+            $data['text'] = $data['text'] . $no;
         }
-        $data = [
-            'object_guid' => $guid,
-            'message_id' => $message_id,
-            'text' => $text . $no
-        ];
         return Kernel::send('editMessage', $data, $this->account);
     }
     /**
@@ -933,7 +938,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, new Actions('Recording'));
         }
 
         $id = $response['id'];
