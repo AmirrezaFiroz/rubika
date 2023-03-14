@@ -1,12 +1,11 @@
 <?php
 
 declare(strict_types=1);
-
 namespace Rubika\Http;
 
 use Rubika\Tools\{
     Color,
-    Crypto,
+    Brain,
     System
 };
 use Rubika\Exception\{
@@ -19,16 +18,16 @@ use WebSocket\Client as websocket;
 use WebSocket\ConnectionException;
 
 /**
- * HTTP library
+ * HTTP library for sending requests
  */
 class Kernel
 {
     /**
-     * send GET request
+     * get web page content
      *
-     * @param string $url
+     * @param string $url page url
      * @throws internetConnectionError not connected to internet
-     * @return string
+     * @return string page content
      */
     public static function Get(string $url): string
     {
@@ -43,9 +42,9 @@ class Kernel
      * send POST request
      *
      * @param string $url
-     * @param array $data data in array type
+     * @param array $data array of data
      * @throws internetConnectionError not connected to internet
-     * @return string
+     * @return string return results
      */
     public static function Post(string $url, array $data): string
     {
@@ -74,7 +73,7 @@ class Kernel
     }
 
     /**
-     * testing is url available
+     * check availablity of url
      *
      * @param string $url
      * @throws internetConnectionError not connected to internet
@@ -114,14 +113,14 @@ class Kernel
     }
 
     /**
-     * send requests to rubika
+     * send data to server for running method
      *
      * @param string|Account $auth account auth or account info(in Account type)
      * @param array|object $datas request data
-     * @param boolean $setTmpSession true for replace 'tmp_session' instead of 'auth' in request
+     * @param boolean $setTmpSession if true send tmp_session instead of auth in request
      * @throws internetConnectionError not connected to internet
      * @throws APIError server not returned a response
-     * @return array|false array if is it successful or false if its failed
+     * @return array|false array if result is successful
      */
     public static function send_request(Account $account, array|object $datas, bool $setTmpSession = false): array|false
     {
@@ -143,7 +142,7 @@ class Kernel
                     unset($urls[$i]);
                     $data = [
                         'api_version' => '5',
-                        'data_enc' => (new Crypto($key))->encrypt(json_encode($datas))
+                        'data_enc' => (new Brain($key))->encrypt(json_encode($datas))
                     ];
                     $data[$setTmpSession ? 'tmp_session' : 'auth'] = $account->auth;
                     try {
@@ -159,10 +158,10 @@ class Kernel
                     if (is_array(json_decode($response, true))) {
                         $response = json_decode($response, true);
                         if (isset($response['data_enc'])) {
-                            $response = (new Crypto($key))->decrypt($response['data_enc']);
+                            $response = (new Brain($key))->decrypt($response['data_enc']);
                             return json_decode($response, true);
                         } else {
-                            return false; // make it an error
+                            return false;
                         }
                     } else {
                         if (!isset($GLOBALS['argv'])) {
@@ -187,7 +186,7 @@ class Kernel
      *
      * @param string $method
      * @param array $data
-     * @return array|false  array if is it successful or false if its failed
+     * @return array|false array if result is successful
      */
     public static function send(string $method, array $data, Account $account, bool $setTmpSession = false): array|false
     {
@@ -206,9 +205,9 @@ class Kernel
     }
 
     /**
-     * get available sockets
+     * get available socket links
      *
-     * @return array
+     * @return array list of links
      */
     public static function get_socket_links(): array
     {

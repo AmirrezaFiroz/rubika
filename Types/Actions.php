@@ -3,7 +3,7 @@
 namespace Rubika\Types;
 
 /**
- * actions of sendChatACtion method
+ * get actions of sendChatACtion method
  */
 class Actions
 {

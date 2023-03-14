@@ -5,7 +5,7 @@ namespace Rubika;
 use Rubika\Exception\internetConnectionError;
 use Rubika\Http\Kernel;
 use Rubika\Tools\Color;
-use Rubika\Tools\Crypto;
+use Rubika\Tools\Brain;
 use WebSocket\Client as websocket;
 
 /**
@@ -73,7 +73,7 @@ abstract class Client extends Bot
             $second++;
             $update = json_decode($socket->receive(), true);
             if (isset($update['data_enc'])) {
-                $update = json_decode((new Crypto($this->account->encryptKey))->decrypt($update['data_enc']), true);
+                $update = json_decode((new Brain($this->account->encryptKey))->decrypt($update['data_enc']), true);
             }
             $this->runBot(isset($update['message_updates']) ? $update['message_updates'] : []);
         } while (true);

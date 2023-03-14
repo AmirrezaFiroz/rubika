@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
 namespace Rubika\Extension;
 
 use Rubika\Tools\{
@@ -11,7 +10,7 @@ use Rubika\Tools\{
 };
 
 /**
- * functions for library
+ * functions for complate library
  */
 class Traits
 {
@@ -25,7 +24,7 @@ trait functions
      * get random string
      *
      * @param integer $length length of string
-     * @return string
+     * @return string a random string
      */
     public static function rand_str(int $length = 32): string
     {
@@ -38,11 +37,11 @@ trait functions
     }
 
     /**
-     * get random string from gived chars
+     * get random string from taken chars
      *
      * @param integer $length
-     * @param string ...$chars
-     * @return string
+     * @param string ...$chars be like ['a', 'b', ...]
+     * @return string random string
      */
     public static function rand_str_chars(int $length, string ...$chars): string
     {
@@ -58,9 +57,9 @@ trait functions
      * replace character at indexes of string
      *
      * @param string $text string for editing
-     * @param integer $position index
+     * @param integer $position index of character
      * @param string $newChar replace char with ...
-     * @return string
+     * @return string new string
      */
     public static function replace(string $text, int $position, string $newChar): string
     {
@@ -86,7 +85,7 @@ trait Texts
     }
 
     /**
-     * print starting text
+     * print start text
      *
      * @return void
      */

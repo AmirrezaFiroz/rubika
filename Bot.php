@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Rubika;
 
 use Exception;
-use fast;
 use Rubika\assets\login;
 use Rubika\Exception\{
     CodeIsExpired,
@@ -21,13 +20,14 @@ use Rubika\Exception\{
     invalidPassword,
     noIndexFileExists,
     notRegistered,
-    web_ConfigFileError
+    web_ConfigFileError,
+    UsernameExist
 };
 use Rubika\Extension\Traits;
 use Rubika\Http\Kernel;
 use Rubika\Tools\{
     Color,
-    Crypto,
+    Brain,
     File,
     Printing,
     System
@@ -147,7 +147,7 @@ class Bot
                         } elseif ($result['status'] == 'CodeIsExpired') {
                             throw new CodeIsExpired(' login code is expired');
                         }
-                        $result['encryptKey'] = Crypto::create_secret($result['auth']);
+                        $result['encryptKey'] = Brain::create_secret($result['auth']);
                         unset($result['status']);
                         unset($result['user_guid']);
                         $acc = new Account(false, $result, $phone);
@@ -224,7 +224,7 @@ class Bot
                         } elseif ($result['status'] == 'CodeIsExpired') {
                             throw new CodeIsExpired(Color::color(' login code is expired', 'red'));
                         }
-                        $result['encryptKey'] = Crypto::create_secret($result['auth']);
+                        $result['encryptKey'] = Brain::create_secret($result['auth']);
                         unset($result['status']);
                         unset($result['user_guid']);
                         $acc = new Account(false, $result, $phone);
@@ -276,6 +276,52 @@ class Bot
     {
         return Kernel::send('getMySessions', [], $this->account);
     }
+
+    /**
+     * change account username
+     *
+     * @param string $newUsername
+     * @throws UsernameExist this username is already exists
+     * @throws ERROR_GENERIC invalid username input : 
+     * 1. must start with characters
+     * 2. characters count must between 5-32
+     * 3. allowed chars: english characters(a-z , A-Z) and (_)
+     * @return array|false
+     */
+    public function changeUsername(string $newUsername): array|false
+    {
+        $res = Kernel::send('updateUsername', [
+            "username" => $newUsername
+        ], $this->account);
+        $this->account->user->username = $res['status'] == 'OK' ? $newUsername : $this->account->user->username;
+        switch ($res['status']) {
+            case 'UsernameExist':
+                throw new UsernameExist('username is already exist');
+                break;
+            case 'ERROR_GENERIC':
+                throw new ERROR_GENERIC("invalid username input:\n  1. must start with characters\n  2. characters count must between 5-32\n  3. allowed chars: english characters(a-z , A-Z) and (_)");
+                break;
+        }
+        return $res;
+    }
+
+    /**
+     * change account two-step password
+     *
+     * @param string $oldPass account password
+     * @param string $newPass new password for account
+     * @param string $hint hint of password
+     * @return array|false array if is it successful or false if its failed
+     */
+    public function changePassword(string $oldPass, string $newPass, string $hint): array|false
+    {
+        return Kernel::send('getUserInfo', [
+            "password" => $oldPass,
+            "new_hint" => $hint,
+            "new_password" => $newPass
+        ], $this->account);
+    }
+
     /** 
      * terminate other account sessions
      * 

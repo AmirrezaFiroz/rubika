@@ -2,7 +2,7 @@
     "name": "rubika/app",
     "description": "rubika library for making apps with PHP",
     "type": "library",
-    "version": "v1.2.0",
+    "version": "v1.3.0beta",
     "autoload": {
         "psr-4": {
             "Rubika\\": "./"
@@ -18,10 +18,11 @@
     "readme": "README.md",
     "keywords": [
         "rubika",
-        "rubika",
-        "client",
-        "rubika-php",
-        "rubika php"
+        "rubikalib",
+        "rubika-lib",
+        "rubikalibrary",
+        "rubika-library",
+        "rubika library"
     ],
     "license": "GPL-3.0",
     "minimum-stability": "stable",

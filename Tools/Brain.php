@@ -8,7 +8,7 @@ use Rubika\Extension\Traits;
 /**
  * encrypt data between API and client
  */
-final class Crypto
+final class Brain
 {
     public function __construct(
         public string $key
@@ -41,7 +41,7 @@ final class Crypto
      * create secred from auth for encrypt and decrypt data
      *
      * @param string $auth auth of account
-     * @return string secret
+     * @return string secret key
      */
     public static function create_secret(string $auth) : string
     {

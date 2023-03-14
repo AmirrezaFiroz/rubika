@@ -1,33 +1,37 @@
 <?php
 
+declare(strict_types=1);
 use Rubika\Client;
 use Rubika\Exception\Error;
 
 /**
- * get updates fast
+ * run Client faster
  *
- * @param Closure $closure function for passing updates and client object:
- * function (array $update, client): void {}
- * @param integer|string $phone
+ * @param callable $callback a function to pass update and Bot object:
+ * function callback(array $update, Bot $obj): void
+ * {
+ *    // code ...
+ * }
+ * @param integer $phone like 9123456789
  * @return void
  */
-function Fast(Closure $closure, int|string $phone)
+function Fast(callable $callback, int $phone): void
 {
-    $GLOBALS["CLS"] = $closure;
+    $GLOBALS['callback_fn'] = $callback;
     try {
-        class fast extends Client
+        class fastBot extends Client
         {
-            public function onStart(): void
+            function onStart(): void
             {
+                // pass
             }
 
-            public function runBot(array $update): mixed
+            function runBot(array $update): void
             {
-                return $GLOBALS["CLS"]($update, $this);
+                $GLOBALS['callback_fn']($update, $this);
             }
         }
-        new fast($phone);
-    } catch (Error $e) {
-        echo $e->getMessage() . "\n";
+    } catch (Error $th) {
+        echo $th->getMessage() . "\n";
     }
 }

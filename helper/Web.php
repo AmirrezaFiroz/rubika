@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 use Rubika\Bot;
 use Rubika\Exception\Error;
 
@@ -9,7 +10,7 @@ use Rubika\Exception\Error;
  * @param integer $phone
  * @return Bot
  */
-function Web(int $phone)
+function Web(int $phone): Bot
 {
     try {
         return new Bot($phone, true);
