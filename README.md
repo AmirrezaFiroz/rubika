@@ -105,6 +105,9 @@ try {
 |  15   |                                    not file exists                                    |
 |  16   |                                  file mie is invalid                                  |
 |  17   |                                  invalid data passed                                  |
+|  18   |                             not understandable object ID                              |
+|  19   |                                   invalid join link                                   |
+|  20   |                                   invalid username                                    |
 # web mode
 
 if you runs your bot on web page or want to make web page, we have a way too ;)
