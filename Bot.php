@@ -16,8 +16,11 @@ use Rubika\Exception\{
     invalidAction,
     invalidCode,
     invalidData,
+    invalidID,
+    invalidJoinLink,
     invalidOptions,
     invalidPassword,
+    invalidUsername,
     noIndexFileExists,
     notRegistered,
     web_ConfigFileError,
@@ -34,7 +37,9 @@ use Rubika\Tools\{
 };
 use Rubika\Types\{
     Account,
-    Actions
+    Actions,
+    channelType,
+    report_type
 };
 use Symfony\Component\Yaml\Yaml;
 use getID3;
@@ -322,6 +327,32 @@ class Bot
         ], $this->account);
     }
 
+    /**
+     * turn off two-step verifition
+     *
+     * @param string $password account password
+     * @return array|false
+     */
+    public function turnOffTwoStep(string $password): array|false
+    {
+        return Kernel::send('turnOffTwoStep', [
+            "password" => $password
+        ], $this->account);
+    }
+
+    /**
+     * check two-step verifition password is true or not
+     *
+     * @param string $password check password
+     * @return boolean true or false
+     */
+    public function checkTwoStepPasscode(string $password): bool
+    {
+        return Kernel::send('checkTwoStepPasscode', [
+            "password" => $password
+        ], $this->account)['data']['is_vaild'];
+    }
+
     /** 
      * terminate other account sessions
      * 
@@ -352,6 +383,24 @@ class Bot
     {
         return Kernel::send('seenChats', [
             'seen_list' => $seen_list
+        ], $this->account);
+    }
+
+    /**
+     * report chat
+     *
+     * @param string $guid
+     * @param report_type $r_type report for what?
+     * @param string $description
+     * @return array|false
+     */
+    public function report(string $guid, report_type $r_type, string $description = ''): array|false
+    {
+        return Kernel::send('reportObject', [
+            'object_guid' => $guid,
+            'report_description' => $description,
+            'report_type' => $r_type->value,
+            "report_type_object" => "Object"
         ], $this->account);
     }
 
@@ -516,7 +565,7 @@ class Bot
      */
     public function downloadMedia(string $guid, int $message_id): void
     {
-        $mData = $this->getMessagesInfo($guid, $message_id)[0];
+        $mData = $this->getMessageInfo($guid, $message_id)[0];
 
         if (!isset($mData['file_inline'])) {
             throw new invalidData('invalid message');
@@ -1061,6 +1110,25 @@ class Bot
     }
 
     /**
+     * get username info
+     *
+     * @param string $userName
+     * @return array|false
+     */
+    public function getUsernameInfo(string $userName): array|false
+    {
+        preg_match('/[a-zA-Z][a-zA-Z0-9_]{2,31}/', str_replace(['@', ' '], '', $userName), $matches);
+
+        if (count($matches) == 0) {
+            throw new invalidUsername("invalid username");
+        }
+
+        return Kernel::send('getObjectByUsername', [
+            'username' => $matches[0]
+        ], $this->account);
+    }
+
+    /**
      * add new contact
      *
      * @param string $fname first name
@@ -1155,13 +1223,100 @@ class Bot
     }
 
     /**
-     * get message info
+     * create new channel
+     *
+     * @param string $title channel name
+     * @param string $describtion describtion of channel
+     * @param array $users list of users which will add to channel
+     * @param channelType $channelType channel type [must be public or private]
+     * @return array|false
+     */
+    public function createChannel(string $title, array $users, string $describtion = "", channelType $channelType = channelType::Public): array|false
+    {
+        return Kernel::send('setActionChat', [
+            "title" => $title,
+            "description" => $describtion,
+            "member_guids" => $users,
+            "channel_type" => $channelType->value
+        ], $this->account);
+    }
+
+    /**
+     * delete channel
+     *
+     * @param string $channelGuid channel guid
+     * @return array|false
+     */
+    public function deleteChannel(string $channelGuid): array|false
+    {
+        return Kernel::send('removeChannel', [
+            "channel_guid" => $channelGuid
+        ], $this->account);
+    }
+
+    public function joinChannel(string $ch_sign): array|false
+    {
+        $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $ch_sign);
+        if (System::startWith($sign, 'joinc')) {
+            $res = Kernel::send('joinChannelByLink', [
+                'hash_link' => str_replace('joinc/', '', $sign)
+            ], $this->account);
+        } elseif (System::startWith($sign, '@')) {
+            $data = $this->getUsernameInfo($ch_sign)['channel'];
+            $res = Kernel::send('joinChannelAction', [
+                'action' => 'Join',
+                'channel_guid' => $data['channel_guid']
+            ], $this->account);
+        } elseif (System::startWith($sign, 'c')) {
+            $res = Kernel::send('joinChannelAction', [
+                'action' => 'Join',
+                'channel_guid' => $sign
+            ], $this->account);
+        } else {
+            throw new invalidID("can't understand sign of channel join");
+        }
+        return $res;
+    }
+
+    /**
+     * leave a channel
+     *
+     * @param string $channelGuid channel guid
+     * @return array|false
+     */
+    public function leaveChannel(string $channelGuid): array|false
+    {
+        return Kernel::send('joinChannelAction', [
+            'action' => 'Leave',
+            'channel_guid' => $channelGuid
+        ], $this->account);
+    }
+
+    public function getLinkPreview(string $link): array|false
+    {
+        $e = explode('/', str_replace(array_map(fn ($v) => $v . "://rubika.ir/joinc/", ['http', 'https']), '', $link));
+
+        $res = Kernel::send((match ($e[0]) {
+            'c' => 'channel',
+            'g' => 'group',
+            default => throw new invalidJoinLink("invalid join link")
+        }) . 'PreviewByJoinLink', ['hash_link' => $e[1]], $this->account);
+
+        if ($res['is_valid']) {
+            return $res;
+        } else {
+            throw new invalidJoinLink("invalid join link");
+        }
+    }
+
+    /**
+     * get message(s) info
      *
      * @param string $guid chat guid
      * @param int|array $message_id an id of message or array of message_id(s)
      * @return array|false
      */
-    public function getMessagesInfo(string $guid, int|array $message_id): array|false
+    public function getMessageInfo(string $guid, int|array $message_id): array|false
     {
         return Kernel::send('getMessagesByID', [
             "object_guid" => $guid,
