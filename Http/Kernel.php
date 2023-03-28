@@ -195,7 +195,7 @@ class Kernel
             'input' => $data,
             'client' => [
                 "app_name" => "Main",
-                "app_version" => "4.1.11",
+                "app_version" => "4.2.0",
                 "platform" => "Web",
                 "package" => "web.rubika.ir",
                 "lang_code" => "fa"
