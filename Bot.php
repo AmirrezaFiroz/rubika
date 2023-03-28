@@ -38,7 +38,8 @@ use Rubika\Tools\{
 use Rubika\Types\{
     Account,
     Actions,
-    channelType
+    channelType,
+    report_type
 };
 use Symfony\Component\Yaml\Yaml;
 use getID3;
@@ -326,6 +327,32 @@ class Bot
         ], $this->account);
     }
 
+    /**
+     * turn off two-step verifition
+     *
+     * @param string $password account password
+     * @return array|false
+     */
+    public function turnOffTwoStep(string $password): array|false
+    {
+        return Kernel::send('turnOffTwoStep', [
+            "password" => $password
+        ], $this->account);
+    }
+
+    /**
+     * check two-step verifition password is true or not
+     *
+     * @param string $password check password
+     * @return boolean true or false
+     */
+    public function checkTwoStepPasscode(string $password): bool
+    {
+        return Kernel::send('checkTwoStepPasscode', [
+            "password" => $password
+        ], $this->account)['data']['is_vaild'];
+    }
+
     /** 
      * terminate other account sessions
      * 
@@ -356,6 +383,24 @@ class Bot
     {
         return Kernel::send('seenChats', [
             'seen_list' => $seen_list
+        ], $this->account);
+    }
+
+    /**
+     * report chat
+     *
+     * @param string $guid
+     * @param report_type $r_type report for what?
+     * @param string $description
+     * @return array|false
+     */
+    public function report(string $guid, report_type $r_type, string $description = ''): array|false
+    {
+        return Kernel::send('reportObject', [
+            'object_guid' => $guid,
+            'report_description' => $description,
+            'report_type' => $r_type->value,
+            "report_type_object" => "Object"
         ], $this->account);
     }
 
