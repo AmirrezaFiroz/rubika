@@ -34,7 +34,8 @@ use Rubika\Tools\{
 };
 use Rubika\Types\{
     Account,
-    Actions
+    Actions,
+    channelType
 };
 use Symfony\Component\Yaml\Yaml;
 use getID3;
@@ -1151,6 +1152,38 @@ class Bot
         return Kernel::send('setActionChat', [
             "action" => "Unmute",
             "object_guid" => $guid
+        ], $this->account);
+    }
+
+    /**
+     * create new channel
+     *
+     * @param string $title channel name
+     * @param string $describtion describtion of channel
+     * @param array $users list of users which will add to channel
+     * @param channelType $channelType channel type [must be public or private]
+     * @return array|false
+     */
+    public function createChannel(string $title, string $describtion = "", array $users, channelType $channelType = channelType::Public): array|false
+    {
+        return Kernel::send('setActionChat', [
+            "title" => $title,
+            "description" => $describtion,
+            "member_guids" => $users,
+            "channel_type" => $channelType->value
+        ], $this->account);
+    }
+
+    /**
+     * delete channel
+     *
+     * @param string $channelGuid channel guid
+     * @return array|false
+     */
+    public function deleteChannel(string $channelGuid): array|false
+    {
+        return Kernel::send('removeChannel', [
+            "channel_guid" => $channelGuid
         ], $this->account);
     }
 
