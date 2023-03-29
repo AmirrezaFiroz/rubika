@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace Rubika\Http;
 
 use Rubika\Tools\{
@@ -144,8 +145,8 @@ class Kernel
                     $data = [
                         'api_version' => !$rubino ? '5' : '0'
                     ];
-                    $data[!$rubino ? 'data_enc' : 'data'] = !$rubino ? (new Brain($key))->encrypt(json_encode($datas)) : $datas['input'];
                     $data[$setTmpSession ? 'tmp_session' : 'auth'] = $account->auth;
+                    $data[!$rubino ? 'data_enc' : 'data'] = !$rubino ? (new Brain($key))->encrypt(json_encode($datas)) : $datas['input'];
                     if ($rubino) {
                         $data['client'] = $datas['client'];
                         $data['method'] = $datas['method'];
