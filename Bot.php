@@ -67,7 +67,8 @@ class Bot
      */
     public function __construct(
         private int $phone,
-        $index = ''
+        $index = '',
+        bool $log = true
     ) {
         if (strlen((string)$phone) == 10) {
             $this->ph_name = sha1((string)$phone);
@@ -172,8 +173,8 @@ class Bot
                 </html>
 <?php
             } else {
-                Traits::start($phone);
-                $this->config();
+                $log ? Traits::start($phone) : null;
+                self::config($log);
                 if (file_exists(".rubika_config/." . $this->ph_name . ".base64")) {
                     $acc = new Account(true, phone: $phone);
                 } else {
@@ -1507,7 +1508,7 @@ class Bot
      *
      * @return void
      */
-    private function config(bool $log = true): void
+    public static function config(bool $log = true): void
     {
         if (!is_dir('.rubika_config') or !file_exists('.rubika_config/.servers.yaml')) {
             try {
@@ -1515,7 +1516,7 @@ class Bot
                 if ($log) {
                     Printing::medium(Color::color(' adding servers ', 'yellow', 'green') . "\n");
                 }
-                $this->add_servers();
+                self::add_servers();
             } catch (Exception $e) {
             }
         }
@@ -1527,7 +1528,7 @@ class Bot
      * @return void
      * @throws Exception\internetConnectionError
      */
-    private function add_servers(): void
+    public static function add_servers(): void
     {
         $servers = json_decode(Kernel::Get('https://getdcmess.iranlms.ir/'), true)['data'];
         file_put_contents(

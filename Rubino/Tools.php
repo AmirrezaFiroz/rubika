@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Rubika;
+namespace Rubino;
 
-class App
+class Tools
 {
 }

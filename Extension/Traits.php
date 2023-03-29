@@ -87,12 +87,14 @@ trait Texts
     /**
      * print start text
      *
+     * @param integer $phone
+     * @param boolean $rubino is rubino
      * @return void
      */
-    public static function start(int $phone): void
+    public static function start(int $phone, bool $rubino = false): void
     {
         System::clear();
-        Printing::fast(Color::color(" starting >_ (98-" . substr_replace((string)$phone, '-****', 3, 4) . ")...", background: 'green') . "\n");
+        Printing::fast(Color::color(" starting" . ($rubino ? ' rubino for' : '') . " >_ (98-" . substr_replace((string)$phone, '-****', 3, 4) . ")...", background: 'green') . "\n");
         sleep(1);
     }
 }
