@@ -1223,6 +1223,34 @@ class Bot
     }
 
     /**
+     * create new group
+     *
+     * @param string $title group name
+     * @param array $users list of users which will add to channel
+     * @return array|false
+     */
+    public function createGroup(string $title, array $users): array|false
+    {
+        return Kernel::send('setActionChat', [
+            "title" => $title,
+            "member_guids" => $users
+        ], $this->account);
+    }
+    
+    /**
+     * delete group
+     *
+     * @param string $channelGuid group guid
+     * @return array|false
+     */
+    public function deleteGroup(string $groupGuid): array|false
+    {
+        return Kernel::send('removeGroup', [
+            "group_guid" => $groupGuid
+        ], $this->account);
+    }
+
+    /**
      * create new channel
      *
      * @param string $title channel name
