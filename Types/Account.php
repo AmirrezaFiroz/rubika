@@ -1,15 +1,11 @@
 <?php
 
 declare(strict_types=1);
+
 namespace Rubika\Types;
 
-use Rubika\Exception\{
-    ERROR_GENERIC,
-    UsernameExist
-};
 use Rubika\Tools\Brain;
 use Rubika\Extension\Traits;
-use Rubika\Http\Kernel;
 use stdClass;
 
 /**
@@ -54,9 +50,7 @@ class Account extends Traits
         $this->ph_name = sha1((string)$phone);
         if ($data != []) {
             $this->config($data, true);
-            if (!defined('SET_UP')) {
-                define('SET_UP', false);
-            }
+            !defined('SET_UP') ? define('SET_UP', false) : null;
         } else {
             if ($readFile) {
                 define('SET_UP', false);
