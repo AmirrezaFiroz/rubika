@@ -443,7 +443,7 @@ class Bot
         }
 
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('typing'));
+            $this->sendChatAction($guid, Actions::Typing);
         }
 
         return Kernel::send('sendMessage', $data, $this->account);
@@ -544,10 +544,10 @@ class Bot
      */
     public function sendChatAction(string $chat_id, Actions $action): array|false
     {
-        if ($action->value() == '') {
+        if ($action->value == '') {
             throw new invalidAction('action not exists');
         } else {
-            $action = $action->value();
+            $action = $action->value;
         }
         return Kernel::send('sendChatActivity', [
             "object_guid" => $chat_id,
@@ -649,7 +649,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -728,7 +728,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -809,7 +809,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -899,7 +899,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -988,7 +988,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('Recording'));
+            $this->sendChatAction($guid, Actions::Recording);
         }
 
         $id = $response['id'];
@@ -1674,17 +1674,4 @@ class Bot
             "phone_code" => $code
         ], $this->account, true);
     }
-
-    // if (function_exists('curl_file_create')) { // php 5.5+
-    //     $cFile = curl_file_create($file_name_with_full_path);
-    //   } else { // 
-    //     $cFile = '@' . realpath($file_name_with_full_path);
-    //   }
-    //   $post = array('extra_info' => '123456','file_contents'=> $cFile);
-    //   $ch = curl_init();
-    //   curl_setopt($ch, CURLOPT_URL,$target_url);
-    //   curl_setopt($ch, CURLOPT_POST,1);
-    //   curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-    //   $result=curl_exec ($ch);
-    //   curl_close ($ch);
 }
