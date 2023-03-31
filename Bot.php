@@ -1274,19 +1274,18 @@ class Bot
     //     return $res;
     // }
 
-    // /**
-    //  * leave a group
-    //  *
-    //  * @param string $groupGuid group guid
-    //  * @return array|false
-    //  */
-    // public function leaveGroup(string $groupGuid): array|false
-    // {
-    //     return Kernel::send('joinChannelAction', [
-    //         'action' => 'Leave',
-    //         'channel_guid' => $groupGuid
-    //     ], $this->account);
-    // }
+    /**
+     * leave a group
+     *
+     * @param string $groupGuid group guid
+     * @return array|false
+     */
+    public function leaveGroup(string $groupGuid): array|false
+    {
+        return Kernel::send('leaveGroup', [
+            'group_guid' => $groupGuid
+        ], $this->account);
+    }
 
     /**
      * create new channel
