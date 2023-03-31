@@ -42,8 +42,11 @@ class Account extends Traits
     private string $ph_name = '';
 
     /**
-     * @param boolean $readFile true if want to read data or false for init new data
-     * @param array $data datas of account
+     * account object
+     *
+     * @param boolean $readFiletrue if want to read data or false for init new data
+     * @param array $datadatas of account
+     * @param integer $phone phone number
      */
     final public function __construct(bool $readFile, array $data = [], int $phone = 0)
     {
@@ -82,6 +85,7 @@ class Account extends Traits
      * set account data
      *
      * @param array $data account data
+     * @param bool $save save data
      * @return void
      */
     private function config(array $data, bool $save = false): void
