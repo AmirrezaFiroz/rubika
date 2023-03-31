@@ -1222,20 +1222,20 @@ class Bot
         ], $this->account);
     }
 
-    // /**
-    //  * create new group
-    //  *
-    //  * @param string $title group name
-    //  * @param array $users list of users which will add to channel
-    //  * @return array|false
-    //  */
-    // public function createGroup(string $title, array $users): array|false
-    // {
-    //     return Kernel::send('setActionChat', [
-    //         "title" => $title,
-    //         "member_guids" => $users
-    //     ], $this->account);
-    // }
+    /**
+     * create new group
+     *
+     * @param string $title group name
+     * @param array $users list of users which will add to channel
+     * @return array|false
+     */
+    public function createGroup(string $title, array $users): array|false
+    {
+        return Kernel::send('setActionChat', [
+            "title" => $title,
+            "member_guids" => $users
+        ], $this->account);
+    }
 
     /**
      * delete group
@@ -1250,29 +1250,24 @@ class Bot
         ], $this->account);
     }
 
-    // public function joingroup(string $ch_sign): array|false
-    // {
-    //     $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $ch_sign);
-    //     if (System::startWith($sign, 'joinc')) {
-    //         $res = Kernel::send('joinChannelByLink', [
-    //             'hash_link' => str_replace('joinc/', '', $sign)
-    //         ], $this->account);
-    //     } elseif (System::startWith($sign, '@')) {
-    //         $data = $this->getUsernameInfo($ch_sign)['channel'];
-    //         $res = Kernel::send('joinChannelAction', [
-    //             'action' => 'Join',
-    //             'channel_guid' => $data['channel_guid']
-    //         ], $this->account);
-    //     } elseif (System::startWith($sign, 'c')) {
-    //         $res = Kernel::send('joinChannelAction', [
-    //             'action' => 'Join',
-    //             'channel_guid' => $sign
-    //         ], $this->account);
-    //     } else {
-    //         throw new invalidID("can't understand sign of channel join");
-    //     }
-    //     return $res;
-    // }
+    /**
+     * Undocumented function
+     *
+     * @param string $link group lonk
+     * @return array|false
+     */
+    public function joingroup(string $link): array|false
+    {
+        $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $link);
+        if (System::startWith($sign, 'joing')) {
+            $res = Kernel::send('joinGroup', [
+                'hash_link' => str_replace('joing/', '', $sign)
+            ], $this->account);
+        } else {
+            throw new invalidID("can't understand sign of channel join");
+        }
+        return $res;
+    }
 
     /**
      * leave a group
