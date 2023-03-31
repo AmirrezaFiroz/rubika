@@ -1222,25 +1222,25 @@ class Bot
         ], $this->account);
     }
 
-    /**
-     * create new group
-     *
-     * @param string $title group name
-     * @param array $users list of users which will add to channel
-     * @return array|false
-     */
-    public function createGroup(string $title, array $users): array|false
-    {
-        return Kernel::send('setActionChat', [
-            "title" => $title,
-            "member_guids" => $users
-        ], $this->account);
-    }
-    
+    // /**
+    //  * create new group
+    //  *
+    //  * @param string $title group name
+    //  * @param array $users list of users which will add to channel
+    //  * @return array|false
+    //  */
+    // public function createGroup(string $title, array $users): array|false
+    // {
+    //     return Kernel::send('setActionChat', [
+    //         "title" => $title,
+    //         "member_guids" => $users
+    //     ], $this->account);
+    // }
+
     /**
      * delete group
      *
-     * @param string $channelGuid group guid
+     * @param string $groupGuid group guid
      * @return array|false
      */
     public function deleteGroup(string $groupGuid): array|false
@@ -1250,23 +1250,103 @@ class Bot
         ], $this->account);
     }
 
+    // public function joingroup(string $ch_sign): array|false
+    // {
+    //     $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $ch_sign);
+    //     if (System::startWith($sign, 'joinc')) {
+    //         $res = Kernel::send('joinChannelByLink', [
+    //             'hash_link' => str_replace('joinc/', '', $sign)
+    //         ], $this->account);
+    //     } elseif (System::startWith($sign, '@')) {
+    //         $data = $this->getUsernameInfo($ch_sign)['channel'];
+    //         $res = Kernel::send('joinChannelAction', [
+    //             'action' => 'Join',
+    //             'channel_guid' => $data['channel_guid']
+    //         ], $this->account);
+    //     } elseif (System::startWith($sign, 'c')) {
+    //         $res = Kernel::send('joinChannelAction', [
+    //             'action' => 'Join',
+    //             'channel_guid' => $sign
+    //         ], $this->account);
+    //     } else {
+    //         throw new invalidID("can't understand sign of channel join");
+    //     }
+    //     return $res;
+    // }
+
+    // /**
+    //  * leave a group
+    //  *
+    //  * @param string $groupGuid group guid
+    //  * @return array|false
+    //  */
+    // public function leaveGroup(string $groupGuid): array|false
+    // {
+    //     return Kernel::send('joinChannelAction', [
+    //         'action' => 'Leave',
+    //         'channel_guid' => $groupGuid
+    //     ], $this->account);
+    // }
+
     /**
      * create new channel
      *
      * @param string $title channel name
      * @param string $describtion describtion of channel
+     * @param string $profilePic path of channel profile picture
      * @param array $users list of users which will add to channel
      * @param channelType $channelType channel type [must be public or private]
      * @return array|false
      */
-    public function createChannel(string $title, array $users, string $describtion = "", channelType $channelType = channelType::Public): array|false
+    public function createChannel(string $title, array $users = array(), string $describtion = "", string $profilePic = '', channelType $channelType = channelType::Public): array|false
     {
-        return Kernel::send('setActionChat', [
+        $data = [
             "title" => $title,
             "description" => $describtion,
             "member_guids" => $users,
             "channel_type" => $channelType->value
-        ], $this->account);
+        ];
+
+        if (!empty($profilePic)) {
+            if (!is_file($profilePic)) {
+                throw new fileNotFound('file not exists');
+            }
+            $e = explode(".", basename($profilePic));
+            if (!in_array(end($e), ['png', 'jpg', 'jpeg'])) {
+                throw new fileTypeError('invalid file');
+            }
+
+            $contents = fopen($profilePic, 'rb');
+            $content = fread($contents, filesize($profilePic));
+            fclose($contents);
+            $size = strlen($content);
+
+            $contents2 = File::getThumbInline($content, false);
+            $size2 = strlen($contents2);
+
+            $response = Kernel::requestSendFile(basename($profilePic), $this->account, $size);
+            $response2 = Kernel::requestSendFile(basename($profilePic), $this->account, $size);
+
+            if (isset($response['status']) && $response['status'] != 'OK') {
+                throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+            }
+
+            $id = $response['id'];
+            $access_hash_send = $response['access_hash_send'];
+            $upload_url = $response['upload_url'];
+
+            $id2 = $response2['id'];
+            $access_hash_send2 = $response2['access_hash_send'];
+            $upload_url2 = $response2['upload_url'];
+
+            Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+            Kernel::uploadFile($upload_url2, $size2, $access_hash_send2, $id2, $contents2, $this->account);
+
+            $data['thumbnail_file_id'] = $id2;
+            $data['main_file_id'] = $id;
+        }
+
+        return Kernel::send('addChannel', $data, $this->account);
     }
 
     /**
