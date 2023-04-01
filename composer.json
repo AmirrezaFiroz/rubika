@@ -2,7 +2,7 @@
     "name": "rubika/app",
     "description": "rubika library for making apps with PHP",
     "type": "library",
-    "version": "v1.3",
+    "version": "v1.3beta",
     "autoload": {
         "psr-4": {
             "Rubika\\": "./",
