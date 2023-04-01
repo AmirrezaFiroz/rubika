@@ -2,17 +2,15 @@
     "name": "rubika/app",
     "description": "rubika library for making apps with PHP",
     "type": "library",
-    "version": "v1.3.0beta",
+    "version": "v1.3beta",
     "autoload": {
         "psr-4": {
-            "Rubika\\": "./"
+            "Rubika\\": "./",
+            "Rubino\\": "./Rubino/"
         },
         "files": [
             "helper/Fast.php",
             "helper/Web.php"
-        ],
-        "exclude-from-classmap": [
-            "Docker/"
         ]
     },
     "readme": "README.md",

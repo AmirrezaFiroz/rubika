@@ -16,8 +16,11 @@ use Rubika\Exception\{
     invalidAction,
     invalidCode,
     invalidData,
+    invalidID,
+    invalidJoinLink,
     invalidOptions,
     invalidPassword,
+    invalidUsername,
     noIndexFileExists,
     notRegistered,
     web_ConfigFileError,
@@ -34,7 +37,9 @@ use Rubika\Tools\{
 };
 use Rubika\Types\{
     Account,
-    Actions
+    Actions,
+    channelType,
+    report_type
 };
 use Symfony\Component\Yaml\Yaml;
 use getID3;
@@ -62,7 +67,8 @@ class Bot
      */
     public function __construct(
         private int $phone,
-        $index = ''
+        $index = '',
+        bool $log = true
     ) {
         if (strlen((string)$phone) == 10) {
             $this->ph_name = sha1((string)$phone);
@@ -167,8 +173,8 @@ class Bot
                 </html>
 <?php
             } else {
-                Traits::start($phone);
-                $this->config();
+                $log ? Traits::start($phone) : null;
+                self::config($log);
                 if (file_exists(".rubika_config/." . $this->ph_name . ".base64")) {
                     $acc = new Account(true, phone: $phone);
                 } else {
@@ -322,6 +328,32 @@ class Bot
         ], $this->account);
     }
 
+    /**
+     * turn off two-step verifition
+     *
+     * @param string $password account password
+     * @return array|false
+     */
+    public function turnOffTwoStep(string $password): array|false
+    {
+        return Kernel::send('turnOffTwoStep', [
+            "password" => $password
+        ], $this->account);
+    }
+
+    /**
+     * check two-step verifition password is true or not
+     *
+     * @param string $password check password
+     * @return boolean true or false
+     */
+    public function checkTwoStepPasscode(string $password): bool
+    {
+        return Kernel::send('checkTwoStepPasscode', [
+            "password" => $password
+        ], $this->account)['data']['is_vaild'];
+    }
+
     /** 
      * terminate other account sessions
      * 
@@ -352,6 +384,24 @@ class Bot
     {
         return Kernel::send('seenChats', [
             'seen_list' => $seen_list
+        ], $this->account);
+    }
+
+    /**
+     * report chat
+     *
+     * @param string $guid
+     * @param report_type $r_type report for what?
+     * @param string $description
+     * @return array|false
+     */
+    public function report(string $guid, report_type $r_type, string $description = ''): array|false
+    {
+        return Kernel::send('reportObject', [
+            'object_guid' => $guid,
+            'report_description' => $description,
+            'report_type' => $r_type->value,
+            "report_type_object" => "Object"
         ], $this->account);
     }
 
@@ -393,7 +443,7 @@ class Bot
         }
 
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('typing'));
+            $this->sendChatAction($guid, Actions::Typing);
         }
 
         return Kernel::send('sendMessage', $data, $this->account);
@@ -494,10 +544,10 @@ class Bot
      */
     public function sendChatAction(string $chat_id, Actions $action): array|false
     {
-        if ($action->value() == '') {
+        if ($action->value == '') {
             throw new invalidAction('action not exists');
         } else {
-            $action = $action->value();
+            $action = $action->value;
         }
         return Kernel::send('sendChatActivity', [
             "object_guid" => $chat_id,
@@ -516,7 +566,7 @@ class Bot
      */
     public function downloadMedia(string $guid, int $message_id): void
     {
-        $mData = $this->getMessagesInfo($guid, $message_id)[0];
+        $mData = $this->getMessageInfo($guid, $message_id)[0];
 
         if (!isset($mData['file_inline'])) {
             throw new invalidData('invalid message');
@@ -599,7 +649,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -678,7 +728,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -759,7 +809,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -849,7 +899,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('uploading'));
+            $this->sendChatAction($guid, Actions::Uploading);
         }
 
         $id = $response['id'];
@@ -938,7 +988,7 @@ class Bot
             throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
         }
         if ($this->autoSendAction) {
-            $this->sendChatAction($guid, new Actions('Recording'));
+            $this->sendChatAction($guid, Actions::Recording);
         }
 
         $id = $response['id'];
@@ -1061,6 +1111,25 @@ class Bot
     }
 
     /**
+     * get username info
+     *
+     * @param string $userName
+     * @return array|false
+     */
+    public function getUsernameInfo(string $userName): array|false
+    {
+        preg_match('/[a-zA-Z][a-zA-Z0-9_]{2,31}/', str_replace(['@', ' '], '', $userName), $matches);
+
+        if (count($matches) == 0) {
+            throw new invalidUsername("invalid username");
+        }
+
+        return Kernel::send('getObjectByUsername', [
+            'username' => $matches[0]
+        ], $this->account);
+    }
+
+    /**
      * add new contact
      *
      * @param string $fname first name
@@ -1155,13 +1224,202 @@ class Bot
     }
 
     /**
-     * get message info
+     * create new group
+     *
+     * @param string $title group name
+     * @param array $users list of users which will add to channel
+     * @return array|false
+     */
+    public function createGroup(string $title, array $users): array|false
+    {
+        return Kernel::send('setActionChat', [
+            "title" => $title,
+            "member_guids" => $users
+        ], $this->account);
+    }
+
+    /**
+     * delete group
+     *
+     * @param string $groupGuid group guid
+     * @return array|false
+     */
+    public function deleteGroup(string $groupGuid): array|false
+    {
+        return Kernel::send('removeGroup', [
+            "group_guid" => $groupGuid
+        ], $this->account);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $link group lonk
+     * @return array|false
+     */
+    public function joingroup(string $link): array|false
+    {
+        $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $link);
+        if (System::startWith($sign, 'joing')) {
+            $res = Kernel::send('joinGroup', [
+                'hash_link' => str_replace('joing/', '', $sign)
+            ], $this->account);
+        } else {
+            throw new invalidID("can't understand sign of channel join");
+        }
+        return $res;
+    }
+
+    /**
+     * leave a group
+     *
+     * @param string $groupGuid group guid
+     * @return array|false
+     */
+    public function leaveGroup(string $groupGuid): array|false
+    {
+        return Kernel::send('leaveGroup', [
+            'group_guid' => $groupGuid
+        ], $this->account);
+    }
+
+    /**
+     * create new channel
+     *
+     * @param string $title channel name
+     * @param string $describtion describtion of channel
+     * @param string $profilePic path of channel profile picture
+     * @param array $users list of users which will add to channel
+     * @param channelType $channelType channel type [must be public or private]
+     * @return array|false
+     */
+    public function createChannel(string $title, array $users = array(), string $describtion = "", string $profilePic = '', channelType $channelType = channelType::Public): array|false
+    {
+        $data = [
+            "title" => $title,
+            "description" => $describtion,
+            "member_guids" => $users,
+            "channel_type" => $channelType->value
+        ];
+
+        if (!empty($profilePic)) {
+            if (!is_file($profilePic)) {
+                throw new fileNotFound('file not exists');
+            }
+            $e = explode(".", basename($profilePic));
+            if (!in_array(end($e), ['png', 'jpg', 'jpeg'])) {
+                throw new fileTypeError('invalid file');
+            }
+
+            $contents = fopen($profilePic, 'rb');
+            $content = fread($contents, filesize($profilePic));
+            fclose($contents);
+            $size = strlen($content);
+
+            $contents2 = File::getThumbInline($content, false);
+            $size2 = strlen($contents2);
+
+            $response = Kernel::requestSendFile(basename($profilePic), $this->account, $size);
+            $response2 = Kernel::requestSendFile(basename($profilePic), $this->account, $size);
+
+            if (isset($response['status']) && $response['status'] != 'OK') {
+                throw new ERROR_GENERIC("there is an error : " . $response['status_det']);
+            }
+
+            $id = $response['id'];
+            $access_hash_send = $response['access_hash_send'];
+            $upload_url = $response['upload_url'];
+
+            $id2 = $response2['id'];
+            $access_hash_send2 = $response2['access_hash_send'];
+            $upload_url2 = $response2['upload_url'];
+
+            Kernel::uploadFile($upload_url, $size, $access_hash_send, $id, $content, $this->account);
+            Kernel::uploadFile($upload_url2, $size2, $access_hash_send2, $id2, $contents2, $this->account);
+
+            $data['thumbnail_file_id'] = $id2;
+            $data['main_file_id'] = $id;
+        }
+
+        return Kernel::send('addChannel', $data, $this->account);
+    }
+
+    /**
+     * delete channel
+     *
+     * @param string $channelGuid channel guid
+     * @return array|false
+     */
+    public function deleteChannel(string $channelGuid): array|false
+    {
+        return Kernel::send('removeChannel', [
+            "channel_guid" => $channelGuid
+        ], $this->account);
+    }
+
+    public function joinChannel(string $ch_sign): array|false
+    {
+        $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $ch_sign);
+        if (System::startWith($sign, 'joinc')) {
+            $res = Kernel::send('joinChannelByLink', [
+                'hash_link' => str_replace('joinc/', '', $sign)
+            ], $this->account);
+        } elseif (System::startWith($sign, '@')) {
+            $data = $this->getUsernameInfo($ch_sign)['channel'];
+            $res = Kernel::send('joinChannelAction', [
+                'action' => 'Join',
+                'channel_guid' => $data['channel_guid']
+            ], $this->account);
+        } elseif (System::startWith($sign, 'c')) {
+            $res = Kernel::send('joinChannelAction', [
+                'action' => 'Join',
+                'channel_guid' => $sign
+            ], $this->account);
+        } else {
+            throw new invalidID("can't understand sign of channel join");
+        }
+        return $res;
+    }
+
+    /**
+     * leave a channel
+     *
+     * @param string $channelGuid channel guid
+     * @return array|false
+     */
+    public function leaveChannel(string $channelGuid): array|false
+    {
+        return Kernel::send('joinChannelAction', [
+            'action' => 'Leave',
+            'channel_guid' => $channelGuid
+        ], $this->account);
+    }
+
+    public function getLinkPreview(string $link): array|false
+    {
+        $e = explode('/', str_replace(array_map(fn ($v) => $v . "://rubika.ir/joinc/", ['http', 'https']), '', $link));
+
+        $res = Kernel::send((match ($e[0]) {
+            'c' => 'channel',
+            'g' => 'group',
+            default => throw new invalidJoinLink("invalid join link")
+        }) . 'PreviewByJoinLink', ['hash_link' => $e[1]], $this->account);
+
+        if ($res['is_valid']) {
+            return $res;
+        } else {
+            throw new invalidJoinLink("invalid join link");
+        }
+    }
+
+    /**
+     * get message(s) info
      *
      * @param string $guid chat guid
      * @param int|array $message_id an id of message or array of message_id(s)
      * @return array|false
      */
-    public function getMessagesInfo(string $guid, int|array $message_id): array|false
+    public function getMessageInfo(string $guid, int|array $message_id): array|false
     {
         return Kernel::send('getMessagesByID', [
             "object_guid" => $guid,
@@ -1352,7 +1610,7 @@ class Bot
      *
      * @return void
      */
-    private function config(bool $log = true): void
+    public static function config(bool $log = true): void
     {
         if (!is_dir('.rubika_config') or !file_exists('.rubika_config/.servers.yaml')) {
             try {
@@ -1360,7 +1618,7 @@ class Bot
                 if ($log) {
                     Printing::medium(Color::color(' adding servers ', 'yellow', 'green') . "\n");
                 }
-                $this->add_servers();
+                self::add_servers();
             } catch (Exception $e) {
             }
         }
@@ -1372,7 +1630,7 @@ class Bot
      * @return void
      * @throws Exception\internetConnectionError
      */
-    private function add_servers(): void
+    public static function add_servers(): void
     {
         $servers = json_decode(Kernel::Get('https://getdcmess.iranlms.ir/'), true)['data'];
         file_put_contents(
@@ -1416,17 +1674,4 @@ class Bot
             "phone_code" => $code
         ], $this->account, true);
     }
-
-    // if (function_exists('curl_file_create')) { // php 5.5+
-    //     $cFile = curl_file_create($file_name_with_full_path);
-    //   } else { // 
-    //     $cFile = '@' . realpath($file_name_with_full_path);
-    //   }
-    //   $post = array('extra_info' => '123456','file_contents'=> $cFile);
-    //   $ch = curl_init();
-    //   curl_setopt($ch, CURLOPT_URL,$target_url);
-    //   curl_setopt($ch, CURLOPT_POST,1);
-    //   curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-    //   $result=curl_exec ($ch);
-    //   curl_close ($ch);
 }

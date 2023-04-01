@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 namespace Rubika\Http;
 
 use Rubika\Tools\{
@@ -122,7 +123,7 @@ class Kernel
      * @throws APIError server not returned a response
      * @return array|false array if result is successful
      */
-    public static function send_request(Account $account, array|object $datas, bool $setTmpSession = false): array|false
+    public static function send_request(Account $account, array|object $datas, bool $setTmpSession = false, bool $rubino = false): array|false
     {
         if (Status::connection()) {
             $key = $account->encryptKey;
@@ -137,14 +138,20 @@ class Kernel
             }
             $sended = false;
             $i = 0;
+
             foreach ($urls as $url) {
                 if (self::is_on($url)) {
                     unset($urls[$i]);
                     $data = [
-                        'api_version' => '5',
-                        'data_enc' => (new Brain($key))->encrypt(json_encode($datas))
+                        'api_version' => !$rubino ? '5' : '0'
                     ];
                     $data[$setTmpSession ? 'tmp_session' : 'auth'] = $account->auth;
+                    $data[!$rubino ? 'data_enc' : 'data'] = !$rubino ? (new Brain($key))->encrypt(json_encode($datas)) : $datas['input'];
+                    if ($rubino) {
+                        $data['client'] = $datas['client'];
+                        $data['method'] = $datas['method'];
+                    }
+
                     try {
                         $response = self::Post($url, $data);
                     } catch (APIError $e) {
@@ -155,6 +162,7 @@ class Kernel
                             }
                         }
                     }
+
                     if (is_array(json_decode($response, true))) {
                         $response = json_decode($response, true);
                         if (isset($response['data_enc'])) {
@@ -184,23 +192,32 @@ class Kernel
     /**
      * run methods
      *
-     * @param string $method
-     * @param array $data
+     * @param string $method methods
+     * @param array $data method data
+     * @param Account $account
+     * @param boolean $setTmpSession
+     * @param boolean $rubino is rubino method
      * @return array|false array if result is successful
      */
-    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false): array|false
+    public static function send(string $method, array $data, Account $account, bool $setTmpSession = false, bool $rubino = false): array|false
     {
         $r = self::send_request($account, [
             'method' => $method,
             'input' => $data,
-            'client' => [
+            'client' => !$rubino ? [
                 "app_name" => "Main",
-                "app_version" => "4.1.11",
+                "app_version" => "4.2.0",
                 "platform" => "Web",
                 "package" => "web.rubika.ir",
                 "lang_code" => "fa"
+            ] : [
+                "app_name" => "Main",
+                "app_version" => "2.9.8",
+                "platform" => "Android",
+                "package" => "app.rbmain.a",
+                "lang_code" => "fa"
             ]
-        ], $setTmpSession);
+        ], $setTmpSession, $rubino);
         return isset($r['data']) ? $r['data'] : $r;
     }
 

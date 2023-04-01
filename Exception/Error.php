@@ -17,7 +17,7 @@ class Error extends \Exception
         $first = true;
         foreach (explode("\n", $error) as $line) {
             $error = $first ? '' : $error;
-            $error .= ($first ? '' : "\n") . (isset($GLOBALS['argv']) ? Color::color(" >_ ", background: 'red') : "  ") . ' ' . $line;
+            $error .= ($first ? '' : "\n") . (isset($GLOBALS['argv']) ? Color::color(" >_ ", background: 'red') : "  ") . Color::color(" $line ", background: 'red');
             $first = false;
         }
         parent::__construct((isset($GLOBALS['argv']) ? Color::color(" Error: ", background: 'red') : "Error:") . "\n$error", $errno);

@@ -1,15 +1,11 @@
 <?php
 
 declare(strict_types=1);
+
 namespace Rubika\Types;
 
-use Rubika\Exception\{
-    ERROR_GENERIC,
-    UsernameExist
-};
 use Rubika\Tools\Brain;
 use Rubika\Extension\Traits;
-use Rubika\Http\Kernel;
 use stdClass;
 
 /**
@@ -46,17 +42,18 @@ class Account extends Traits
     private string $ph_name = '';
 
     /**
-     * @param boolean $readFile true if want to read data or false for init new data
-     * @param array $data datas of account
+     * account object
+     *
+     * @param boolean $readFiletrue if want to read data or false for init new data
+     * @param array $datadatas of account
+     * @param integer $phone phone number
      */
     final public function __construct(bool $readFile, array $data = [], int $phone = 0)
     {
         $this->ph_name = sha1((string)$phone);
         if ($data != []) {
             $this->config($data, true);
-            if (!defined('SET_UP')) {
-                define('SET_UP', false);
-            }
+            !defined('SET_UP') ? define('SET_UP', false) : null;
         } else {
             if ($readFile) {
                 define('SET_UP', false);
@@ -88,6 +85,7 @@ class Account extends Traits
      * set account data
      *
      * @param array $data account data
+     * @param bool $save save data
      * @return void
      */
     private function config(array $data, bool $save = false): void

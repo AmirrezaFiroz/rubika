@@ -1,10 +1,7 @@
 vendor/
 composer.lock
 .idea/
-<<<<<<< HEAD
 test.*
-=======
-test.php
->>>>>>> main
+todo.*
 .rubika_config/
 todo.txt
