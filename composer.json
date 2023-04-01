@@ -6,7 +6,8 @@
     "autoload": {
         "psr-4": {
             "Rubika\\": "./",
-            "Rubino\\": "./Rubino/"
+            "Rubino\\": "./Rubino/",
+            "VoiceChats\\": "./VoiceChats/"
         },
         "files": [
             "helper/Fast.php",
