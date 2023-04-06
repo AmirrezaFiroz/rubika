@@ -108,6 +108,8 @@ try {
 |  18   |                             not understandable object ID                              |
 |  19   |                                   invalid join link                                   |
 |  20   |                                   invalid username                                    |
+|  21   |                                     invalid email                                     |
+
 # web mode
 
 if you runs your bot on web page or want to make web page, we have a way too ;)

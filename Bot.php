@@ -16,6 +16,7 @@ use Rubika\Exception\{
     invalidAction,
     invalidCode,
     invalidData,
+    invalidEmail,
     invalidID,
     invalidJoinLink,
     invalidOptions,
@@ -325,6 +326,22 @@ class Bot
             "password" => $oldPass,
             "new_hint" => $hint,
             "new_password" => $newPass
+        ], $this->account);
+    }
+
+
+    /**
+     * turn on two-step verifition
+     *
+     * @param string $password account password
+     * @return array|false
+     */
+    public function turnOnTwoStep(string $password, string $hint, string $recovery_email): array|false
+    {
+        return Kernel::send('setupTwoStepVerification', [
+            "password" => $password,
+            "hint" => $hint,
+            "recovery_email" => filter_var($recovery_email, FILTER_VALIDATE_EMAIL) ? $recovery_email : throw new invalidEmail('invalid email input')
         ], $this->account);
     }
 
