@@ -157,7 +157,7 @@ now you can set auto send action mode to your media like send messgae, photo, ..
 ```php
 Fast(function ($update, $obj) {
     // ...
-        $obj->autoSendAction = true);
+        $obj->autoSendAction = true;
     // ...
 }, 9123456789);
 ```
