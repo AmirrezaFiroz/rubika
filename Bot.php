@@ -1284,6 +1284,31 @@ class Bot
     }
 
     /**
+     * get group info
+     *
+     * @param string $groupGuid group guid
+     * @return array|false
+     */
+    public function getGroupInfo(string $groupGuid): array|false
+    {
+        return Kernel::send('getGroupInfo', [
+            'group_guid' => $groupGuid
+        ], $this->account);
+    }
+    /**
+     * get channel info
+     *
+     * @param string $channelGuid channel guid
+     * @return array|false
+     */
+    public function getChannelInfo(string $channelGuid): array|false
+    {
+        return Kernel::send('getChannelInfo', [
+            'channel_guid' => $channelGuid
+        ], $this->account);
+    }
+
+    /**
      * create new channel
      *
      * @param string $title channel name
@@ -1357,6 +1382,12 @@ class Bot
         ], $this->account);
     }
 
+    /**
+     * join channel
+     *
+     * @param string $ch_sign link, giud or username
+     * @return array|false
+     */
     public function joinChannel(string $ch_sign): array|false
     {
         $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $ch_sign);
