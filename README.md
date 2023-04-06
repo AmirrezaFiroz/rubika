@@ -149,3 +149,15 @@ Fast(function ($update, $obj) {
     }
 }, 9123456789);
 ```
+
+# auto send message action
+
+now you can set auto send action mode to your media like send messgae, photo, ... .
+
+```php
+Fast(function ($update, $obj) {
+    // ...
+        $obj->autoSendAction = true);
+    // ...
+}, 9123456789);
+```
