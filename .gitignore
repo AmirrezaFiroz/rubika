@@ -1,7 +1,7 @@
 vendor/
 composer.lock
 .idea/
-test.*
+test*
 todo.*
 .rubika_config/
 todo.txt
