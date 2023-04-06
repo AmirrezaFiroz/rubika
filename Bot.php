@@ -16,6 +16,7 @@ use Rubika\Exception\{
     invalidAction,
     invalidCode,
     invalidData,
+    invalidEmail,
     invalidID,
     invalidJoinLink,
     invalidOptions,
@@ -325,6 +326,22 @@ class Bot
             "password" => $oldPass,
             "new_hint" => $hint,
             "new_password" => $newPass
+        ], $this->account);
+    }
+
+
+    /**
+     * turn on two-step verifition
+     *
+     * @param string $password account password
+     * @return array|false
+     */
+    public function turnOnTwoStep(string $password, string $hint, string $recovery_email): array|false
+    {
+        return Kernel::send('setupTwoStepVerification', [
+            "password" => $password,
+            "hint" => $hint,
+            "recovery_email" => filter_var($recovery_email, FILTER_VALIDATE_EMAIL) ? $recovery_email : throw new invalidEmail('invalid email input')
         ], $this->account);
     }
 
@@ -1284,6 +1301,31 @@ class Bot
     }
 
     /**
+     * get group info
+     *
+     * @param string $groupGuid group guid
+     * @return array|false
+     */
+    public function getGroupInfo(string $groupGuid): array|false
+    {
+        return Kernel::send('getGroupInfo', [
+            'group_guid' => $groupGuid
+        ], $this->account);
+    }
+    /**
+     * get channel info
+     *
+     * @param string $channelGuid channel guid
+     * @return array|false
+     */
+    public function getChannelInfo(string $channelGuid): array|false
+    {
+        return Kernel::send('getChannelInfo', [
+            'channel_guid' => $channelGuid
+        ], $this->account);
+    }
+
+    /**
      * create new channel
      *
      * @param string $title channel name
@@ -1357,6 +1399,12 @@ class Bot
         ], $this->account);
     }
 
+    /**
+     * join channel
+     *
+     * @param string $ch_sign link, giud or username
+     * @return array|false
+     */
     public function joinChannel(string $ch_sign): array|false
     {
         $sign = str_replace(array_map(fn ($v) => $v . "://rubika.ir/", ['http', 'https']), '', $ch_sign);

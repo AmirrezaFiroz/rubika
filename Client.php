@@ -14,11 +14,14 @@ use WebSocket\Client as websocket;
 abstract class Client extends Bot
 {
     /**
+     * @param integer $phone phone number
+     * @param boolean $runWeb web mode
+     * @param boolean $log logging errors
      * @throws internetConnectionError error in testing socket links
      */
-    public function __construct(int $phone, bool $runWeb = false)
+    public function __construct(int $phone, bool $runWeb = false, bool $log = true)
     {
-        parent::__construct($phone, $runWeb);
+        parent::__construct($phone, $runWeb, $log);
         $url = Kernel::get_socket_links();
         if (count($url) == 0) {
             throw new internetConnectionError(Color::color(' error in testing socket links ', background: 'red'));
