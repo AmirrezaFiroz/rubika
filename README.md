@@ -8,7 +8,7 @@ rubika client for running bots with PHP.
 run this command on terminal
 
 ```
-composer require rubika/rubika
+composer require rubika/app
 ```
 
 1. create a new php file in current directory
