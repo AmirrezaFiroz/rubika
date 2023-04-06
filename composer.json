@@ -40,5 +40,5 @@
         "php": ">=8",
         "james-heinrich/getid3": "^1.9"
     },
-    "homepage": "https://rubika-library.github.io"
+    "homepage": "https://github.com/AmirrezaFiroz/rubika"
 }
