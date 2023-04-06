@@ -8,7 +8,7 @@ rubika client for running bots with PHP.
 run this command on terminal
 
 ```
-composer require rubika/rubika
+composer require rubika/app
 ```
 
 1. create a new php file in current directory
@@ -108,6 +108,8 @@ try {
 |  18   |                             not understandable object ID                              |
 |  19   |                                   invalid join link                                   |
 |  20   |                                   invalid username                                    |
+|  21   |                                     invalid email                                     |
+
 # web mode
 
 if you runs your bot on web page or want to make web page, we have a way too ;)
@@ -145,5 +147,17 @@ Fast(function ($update, $obj) {
 
         $obj->sendMessage($user_id, 'پیامتان دریافت شد ;)');
     }
+}, 9123456789);
+```
+
+# auto send message action
+
+now you can set auto send action mode to your media like send messgae, photo, ... .
+
+```php
+Fast(function ($update, $obj) {
+    // ...
+        $obj->autoSendAction = true);
+    // ...
 }, 9123456789);
 ```

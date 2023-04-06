@@ -2,12 +2,10 @@
     "name": "rubika/app",
     "description": "rubika library for making apps with PHP",
     "type": "library",
-    "version": "v1.3beta",
+    "version": "v1.3",
     "autoload": {
         "psr-4": {
-            "Rubika\\": "./",
-            "Rubino\\": "./Rubino/",
-            "VoiceChats\\": "./VoiceChats/"
+            "Rubika\\": "./"
         },
         "files": [
             "helper/Fast.php",
@@ -42,5 +40,5 @@
         "php": ">=8",
         "james-heinrich/getid3": "^1.9"
     },
-    "homepage": "https://rubika-library.github.io"
+    "homepage": "https://github.com/AmirrezaFiroz/rubika"
 }
