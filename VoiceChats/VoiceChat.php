@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace VoiceChats;
 
-use Rubika\Types\Account;
+use Rubika\Bot;
 
 class VoiceChat
 {
     function __construct(
-        Account $acc,
+        Bot $acc,
         string $guid
     ) {
     }
