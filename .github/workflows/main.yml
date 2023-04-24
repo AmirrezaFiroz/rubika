@@ -1,0 +1,15 @@
+name: test
+
+on:
+  push:
+    branches: [ "githubTests" ]
+  pull_request:
+    branches: [ "githubTests" ]
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: t1
+      run: echo 200
